@@ -109,8 +109,24 @@ export interface OutageReport {
   byCounty: { county: string; outages: number; customers: number }[];
 }
 
+export interface TrafficCamera {
+  id: string;
+  name: string;
+  route: string;
+  direction: string;
+  county: string;
+  nearby: string;
+  lat: number;
+  lon: number;
+  /** Latest still; Caltrans refreshes it every few minutes. */
+  imageUrl: string;
+  /** HLS playlist, when the camera has live video. */
+  streamUrl: string | null;
+}
+
 export type Selection =
   | { type: "alert"; id: string }
   | { type: "gauge"; id: string }
   | { type: "tide"; id: string }
-  | { type: "outage"; id: string };
+  | { type: "outage"; id: string }
+  | { type: "camera"; id: string };

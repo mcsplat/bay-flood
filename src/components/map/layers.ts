@@ -1,5 +1,5 @@
 import type { FeatureCollection } from "geojson";
-import type { FloodAlert, GaugeSummary, PowerOutage } from "@/types/flood";
+import type { FloodAlert, GaugeSummary, PowerOutage, TrafficCamera } from "@/types/flood";
 import { ALERT_COLOR, ALERT_RANK, CATEGORY_COLOR, rank } from "@/lib/categories";
 
 export const BAY_CENTER: [number, number] = [-122.25, 37.75];
@@ -9,7 +9,20 @@ export const BASEMAP = {
   dark: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
 };
 
-export type LayerKey = "alerts" | "gauges" | "tides" | "outages";
+export type LayerKey = "alerts" | "gauges" | "tides" | "outages" | "cameras";
+
+export const CAMERA_COLOR = "#334155";
+
+export function camerasGeoJson(cameras: TrafficCamera[]): FeatureCollection {
+  return {
+    type: "FeatureCollection",
+    features: cameras.map((c) => ({
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [c.lon, c.lat] },
+      properties: { id: c.id, video: c.streamUrl ? 1 : 0 },
+    })),
+  };
+}
 
 /** Outages use indigo so they never read as a flood-severity color. */
 export const OUTAGE_COLOR = "#6366f1";
@@ -75,6 +88,45 @@ export const OVERLAY_LAYERS = [
     type: "line",
     source: "alerts",
     paint: { "line-color": ["get", "color"], "line-width": 1.5, "line-opacity": 0.85 },
+  },
+  // Cameras sit below outages and gauges: useful context, never the headline.
+  {
+    id: "cameras-cluster",
+    type: "circle",
+    source: "cameras",
+    filter: ["has", "point_count"],
+    paint: {
+      "circle-color": CAMERA_COLOR,
+      "circle-opacity": 0.85,
+      "circle-radius": ["step", ["get", "point_count"], 11, 10, 14, 50, 18],
+      "circle-stroke-color": "#ffffff",
+      "circle-stroke-width": 1.5,
+    },
+  },
+  {
+    id: "cameras-cluster-count",
+    type: "symbol",
+    source: "cameras",
+    filter: ["has", "point_count"],
+    layout: {
+      "text-field": ["get", "point_count_abbreviated"],
+      "text-font": ["Open Sans Bold"],
+      "text-size": 11,
+      "text-allow-overlap": true,
+    },
+    paint: { "text-color": "#ffffff" },
+  },
+  {
+    id: "cameras-point",
+    type: "circle",
+    source: "cameras",
+    filter: ["!", ["has", "point_count"]],
+    paint: {
+      "circle-color": CAMERA_COLOR,
+      "circle-radius": 5,
+      "circle-stroke-color": ["case", ["==", ["get", "video"], 1], "#38bdf8", "#ffffff"],
+      "circle-stroke-width": 2,
+    },
   },
   {
     id: "outage-areas-fill",
@@ -161,4 +213,5 @@ export const LAYER_IDS: Record<LayerKey, string[]> = {
   gauges: ["gauges-risk-pulse", "gauges-risk-ring", "gauges-circle", "gauges-selected"],
   tides: [],
   outages: ["outage-areas-fill", "outage-areas-line", "outages-circle"],
+  cameras: ["cameras-cluster", "cameras-cluster-count", "cameras-point"],
 };

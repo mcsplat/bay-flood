@@ -1,6 +1,7 @@
 "use client";
 
-import type { GaugeDetail, GaugeSummary, Selection } from "@/types/flood";
+import type { GaugeDetail, GaugeSummary, Selection, TrafficCamera } from "@/types/flood";
+import { NearbyCameras } from "@/components/camera/CameraPanel";
 import { CATEGORY_COLOR, rank } from "@/lib/categories";
 import { formatFeet, formatRelative, formatTime } from "@/lib/format";
 import { usePolling } from "@/hooks/usePolling";
@@ -53,7 +54,14 @@ export function GaugeList({ gauges, onSelect }: { gauges: GaugeSummary[]; onSele
   );
 }
 
-export function GaugeDetailCard({ summary, onBack }: { summary: GaugeSummary; onBack: () => void }) {
+interface DetailProps {
+  summary: GaugeSummary;
+  onBack: () => void;
+  cameras: TrafficCamera[];
+  onSelect: (s: Selection) => void;
+}
+
+export function GaugeDetailCard({ summary, onBack, cameras, onSelect }: DetailProps) {
   const { data, error, loading } = usePolling<GaugeDetail>(`/api/gauges/${summary.lid}`, 5 * 60_000);
   const t = data?.thresholds;
   const thresholds: ChartThreshold[] = t
@@ -105,6 +113,7 @@ export function GaugeDetailCard({ summary, onBack }: { summary: GaugeSummary; on
       {data && !thresholds.length && (
         <p className="text-[11px] text-muted">This gauge has no official flood stage. Watch for sharp rises.</p>
       )}
+      <NearbyCameras cameras={cameras} lat={summary.lat} lon={summary.lon} onSelect={onSelect} />
     </Card>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { OUTAGE_COLOR, type LayerKey } from "./layers";
+import { CAMERA_COLOR, OUTAGE_COLOR, type LayerKey } from "./layers";
 import { cn } from "@/lib/format";
 
 const OPTIONS: { key: LayerKey; label: string; swatch: string }[] = [
@@ -8,6 +8,7 @@ const OPTIONS: { key: LayerKey; label: string; swatch: string }[] = [
   { key: "gauges", label: "Creek gauges", swatch: "#14b8a6" },
   { key: "tides", label: "Bay tides", swatch: "#0284c7" },
   { key: "outages", label: "Power outages", swatch: OUTAGE_COLOR },
+  { key: "cameras", label: "Traffic cams", swatch: CAMERA_COLOR },
 ];
 
 interface Props {
