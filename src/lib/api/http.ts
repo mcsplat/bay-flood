@@ -1,5 +1,5 @@
-/** api.weather.gov requires a User-Agent identifying the application. */
-const USER_AGENT = "bay-flood-watch (open-source flood awareness map)";
+/** api.weather.gov asks for a User-Agent that identifies the app and how to reach it. */
+const USER_AGENT = "BayFloodWatch/1.0 (+https://bay-flood.vercel.app)";
 
 export async function getJson<T>(
   url: string,
