@@ -18,7 +18,7 @@ interface Props {
 
 export function LayerToggles({ layers, onChange }: Props) {
   return (
-    <fieldset className="absolute left-3 top-3 z-10 flex flex-wrap gap-1.5 rounded-xl border border-border bg-surface/90 p-1.5 shadow-lg backdrop-blur">
+    <fieldset className="absolute left-3 top-[calc(0.75rem+env(safe-area-inset-top))] z-10 flex flex-wrap gap-1.5 rounded-xl border border-border bg-surface/90 p-1.5 shadow-lg backdrop-blur">
       <legend className="sr-only">Map layers</legend>
       {OPTIONS.map((o) => {
         const on = layers[o.key];

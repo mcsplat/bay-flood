@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { FloodAlert, GaugeSummary, Outlook, OutageReport, Selection, TideStationReport, TrafficCamera } from "@/types/flood";
 import { OutlookCard } from "@/components/outlook/OutlookCard";
+import { InstallHint } from "@/components/pwa/InstallHint";
 import { CameraDetail } from "@/components/camera/CameraPanel";
 import { OutageDetail, OutageSummary } from "@/components/panel/OutagePanel";
 import { usePolling } from "@/hooks/usePolling";
@@ -65,6 +66,7 @@ export function FloodDashboard() {
 
   const loading = !alertsQ.data && !tidesQ.data && !gaugesQ.data;
   const errors = [alertsQ.error, tidesQ.error, gaugesQ.error, outagesQ.error, camerasQ.error].filter(Boolean);
+  const offline = [alertsQ, tidesQ, gaugesQ, outagesQ, outlookQ].some((q) => q.offline);
   const updated = Math.max(alertsQ.updatedAt ?? 0, tidesQ.updatedAt ?? 0, gaugesQ.updatedAt ?? 0);
 
   const selectedAlert = selection?.type === "alert" ? alerts.find((a) => a.id === selection.id) : undefined;
@@ -74,9 +76,9 @@ export function FloodDashboard() {
   const selectedCamera = selection?.type === "camera" ? cameras.find((c) => c.id === selection.id) : undefined;
 
   return (
-    <div className="flex h-dvh flex-col md:flex-row">
+    <div className="flex h-dvh flex-col pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] md:flex-row">
       <aside
-        className="order-2 flex min-h-0 flex-1 flex-col border-border bg-background md:order-1 md:w-[400px] md:flex-none md:border-r"
+        className="order-2 flex min-h-0 flex-1 flex-col border-border bg-background md:order-1 md:w-[400px] md:flex-none md:border-r md:pt-[env(safe-area-inset-top)]"
         aria-label="Flood conditions"
       >
         <header className="flex items-center justify-between border-b border-border px-4 py-3">
@@ -85,7 +87,7 @@ export function FloodDashboard() {
             <div>
               <p className="text-sm font-semibold leading-none">Bay Flood Watch</p>
               <p className="mt-0.5 text-[11px] text-muted">
-                {updated ? `Updated ${formatRelative(new Date(updated).toISOString())}` : "Loading live data…"}
+                {offline ? "Showing saved data" : updated ? `Updated ${formatRelative(new Date(updated).toISOString())}` : "Loading live data…"}
               </p>
             </div>
           </div>
@@ -95,15 +97,22 @@ export function FloodDashboard() {
           </Link>
           <span className="flex items-center gap-1.5 text-[11px] font-medium text-muted">
             <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+              {!offline && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />}
+              <span className={`relative inline-flex h-2 w-2 rounded-full ${offline ? "bg-slate-400" : "bg-emerald-500"}`} />
             </span>
-            Live
+            {offline ? "Offline" : "Live"}
           </span>
           </div>
         </header>
 
-        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
+        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
+          <InstallHint />
+          {offline && (
+            <p role="status" className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs">
+              <span className="font-semibold">You&apos;re offline.</span> Showing the last data this device received; it
+              may be out of date.
+            </p>
+          )}
           {errors.length > 0 && (
             <p role="status" className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-600 dark:text-red-400">
               {errors.join(" · ")}. Showing the latest data we have.

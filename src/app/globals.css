@@ -57,3 +57,8 @@ body {
 .maplibregl-popup-tip {
   border-top-color: var(--surface) !important;
 }
+
+/* Installed on iPhone, the map runs under the status bar: keep its controls clear of the notch. */
+.maplibregl-ctrl-top-right {
+  margin-top: env(safe-area-inset-top);
+}

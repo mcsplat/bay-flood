@@ -7,6 +7,8 @@ interface PollState<T> {
   error: string | null;
   loading: boolean;
   updatedAt: number | null;
+  /** True when the service worker answered from its cache because the network is down. */
+  offline: boolean;
 }
 
 /**
@@ -19,6 +21,7 @@ export function usePolling<T>(url: string | null, intervalMs: number) {
     error: null,
     loading: Boolean(url),
     updatedAt: null,
+    offline: false,
   });
   const controller = useRef<AbortController | null>(null);
   const lastLoad = useRef(0);
@@ -34,7 +37,15 @@ export function usePolling<T>(url: string | null, intervalMs: number) {
       const res = await fetch(url, { signal: ac.signal });
       const body = await res.json();
       if (!res.ok) throw new Error(body?.error ?? `Request failed (${res.status})`);
-      setState({ data: body as T, error: null, loading: false, updatedAt: Date.now() });
+      const offline = res.headers.get("X-BFW-Offline") === "1";
+      setState((s) => ({
+        data: body as T,
+        error: null,
+        loading: false,
+        offline,
+        // Cached data keeps its original timestamp so "Updated …" stays honest.
+        updatedAt: offline ? (s.updatedAt ?? Date.now()) : Date.now(),
+      }));
     } catch (err) {
       if (ac.signal.aborted) return;
       setState((s) => ({
