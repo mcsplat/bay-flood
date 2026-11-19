@@ -1,4 +1,4 @@
-import type { Geometry } from "geojson";
+import type { FeatureCollection, Geometry } from "geojson";
 
 /** Unified flood severity scale, aligned with NWS river/coastal flood categories. */
 export type FloodCategory =
@@ -88,7 +88,29 @@ export interface GaugeDetail {
   forecastIssued: string | null;
 }
 
+export interface PowerOutage {
+  id: string;
+  utility: string;
+  customers: number;
+  cause: string | null;
+  county: string;
+  /** ISO timestamps */
+  started: string | null;
+  estimatedRestore: string | null;
+  lat: number;
+  lon: number;
+}
+
+export interface OutageReport {
+  outages: PowerOutage[];
+  /** Outage footprints from the utility map, keyed by incident id in properties.id */
+  areas: FeatureCollection;
+  totalCustomers: number;
+  byCounty: { county: string; outages: number; customers: number }[];
+}
+
 export type Selection =
   | { type: "alert"; id: string }
   | { type: "gauge"; id: string }
-  | { type: "tide"; id: string };
+  | { type: "tide"; id: string }
+  | { type: "outage"; id: string };

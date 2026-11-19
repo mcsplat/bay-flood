@@ -2,29 +2,42 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { GeoJSONSource, Map as MlMap, Marker, MapMouseEvent } from "maplibre-gl";
-import type { FloodAlert, GaugeSummary, Selection, TideStationReport } from "@/types/flood";
+import type { FloodAlert, GaugeSummary, OutageReport, PowerOutage, Selection, TideStationReport } from "@/types/flood";
 import { CATEGORY_COLOR, rank } from "@/lib/categories";
 import { gaugePopupHtml } from "./gaugePopup";
+import { outagePopupHtml } from "./outagePopup";
+import { wireInteractions } from "./interactions";
 import { signedFeet } from "@/lib/format";
-import { BASEMAP, BAY_CENTER, LAYER_IDS, OVERLAY_LAYERS, alertsGeoJson, gaugesGeoJson, type LayerKey } from "./layers";
+import {
+  BASEMAP,
+  BAY_CENTER,
+  LAYER_IDS,
+  OVERLAY_LAYERS,
+  alertsGeoJson,
+  gaugesGeoJson,
+  outagesGeoJson,
+  type LayerKey,
+} from "./layers";
 
 interface Props {
   alerts: FloodAlert[];
   gauges: GaugeSummary[];
   tides: TideStationReport[];
+  outages: OutageReport | null;
   layers: Record<LayerKey, boolean>;
   selection: Selection | null;
   focus: [number, number] | null;
   onSelect: (s: Selection) => void;
 }
 
-export function FloodMap({ alerts, gauges, tides, layers, selection, focus, onSelect }: Props) {
+export function FloodMap({ alerts, gauges, tides, outages, layers, selection, focus, onSelect }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MlMap | null>(null);
   const markers = useRef<Marker[]>([]);
   const mlRef = useRef<typeof import("maplibre-gl") | null>(null);
   const selectRef = useRef(onSelect);
   const gaugeIndex = useRef(new Map<string, GaugeSummary>());
+  const outageIndex = useRef(new Map<string, PowerOutage>());
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -51,38 +64,40 @@ export function FloodMap({ alerts, gauges, tides, layers, selection, focus, onSe
       m.addControl(new ml.GeolocateControl({ trackUserLocation: false }), "top-right");
 
       m.on("load", () => {
-        m.addSource("alerts", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
-        m.addSource("gauges", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+        for (const src of ["alerts", "outage-areas", "outages", "gauges"]) {
+          m.addSource(src, { type: "geojson", data: { type: "FeatureCollection", features: [] } });
+        }
         for (const layer of OVERLAY_LAYERS) m.addLayer(layer as never);
 
         const popup = new ml.Popup({ closeButton: false, offset: 14, maxWidth: "280px" });
-        let hovered: string | null = null;
-        const hoverLayers = ["gauges-circle", "gauges-risk-ring"];
-        for (const layer of hoverLayers) {
-          m.on("mousemove", layer, (e) => {
-            m.getCanvas().style.cursor = "pointer";
-            const id = e.features?.[0]?.properties?.id as string | undefined;
-            const g = id ? gaugeIndex.current.get(id) : undefined;
-            if (!g) return;
-            if (hovered !== id) {
-              hovered = id!;
-              popup.setHTML(gaugePopupHtml(g));
-            }
-            popup.setLngLat([g.lon, g.lat]).addTo(m);
-          });
-          m.on("mouseleave", layer, () => {
-            m.getCanvas().style.cursor = "";
-            hovered = null;
-            popup.remove();
-          });
-        }
-        m.on("click", (e: MapMouseEvent) => {
-          const gauge = m.queryRenderedFeatures(e.point, { layers: hoverLayers })[0];
-          if (gauge) return selectRef.current({ type: "gauge", id: gauge.properties.id });
-          const hits = m.queryRenderedFeatures(e.point, { layers: ["alerts-fill"] });
-          const top = hits.sort((a, b) => b.properties.rank - a.properties.rank)[0];
-          if (top) selectRef.current({ type: "alert", id: top.properties.id });
-        });
+        wireInteractions(
+          m,
+          popup,
+          [
+            {
+              layers: ["gauges-circle", "gauges-risk-ring"],
+              describe: (id) => {
+                const g = gaugeIndex.current.get(id);
+                return g ? { html: gaugePopupHtml(g), lngLat: [g.lon, g.lat] } : null;
+              },
+              select: (id) => ({ type: "gauge", id }),
+            },
+            {
+              layers: ["outages-circle", "outage-areas-fill"],
+              describe: (id) => {
+                const o = outageIndex.current.get(id);
+                return o ? { html: outagePopupHtml(o), lngLat: [o.lon, o.lat] } : null;
+              },
+              select: (id) => ({ type: "outage", id }),
+            },
+          ],
+          (s) => selectRef.current(s),
+          (e: MapMouseEvent) => {
+            const hits = m.queryRenderedFeatures(e.point, { layers: ["alerts-fill"] });
+            const top = hits.sort((a, b) => b.properties.rank - a.properties.rank)[0];
+            if (top) selectRef.current({ type: "alert", id: top.properties.id });
+          },
+        );
         setReady(true);
       });
       map.current = m;
@@ -97,6 +112,13 @@ export function FloodMap({ alerts, gauges, tides, layers, selection, focus, onSe
   useEffect(() => {
     if (ready) (map.current?.getSource("alerts") as GeoJSONSource)?.setData(alertsGeoJson(alerts));
   }, [ready, alerts]);
+
+  useEffect(() => {
+    outageIndex.current = new Map((outages?.outages ?? []).map((o) => [o.id, o]));
+    if (!ready || !outages) return;
+    (map.current?.getSource("outages") as GeoJSONSource)?.setData(outagesGeoJson(outages.outages));
+    (map.current?.getSource("outage-areas") as GeoJSONSource)?.setData(outages.areas);
+  }, [ready, outages]);
 
   useEffect(() => {
     gaugeIndex.current = new Map(gauges.map((g) => [g.lid, g]));

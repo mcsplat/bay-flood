@@ -1,5 +1,5 @@
 import type { FeatureCollection } from "geojson";
-import type { FloodAlert, GaugeSummary } from "@/types/flood";
+import type { FloodAlert, GaugeSummary, PowerOutage } from "@/types/flood";
 import { ALERT_COLOR, ALERT_RANK, CATEGORY_COLOR, rank } from "@/lib/categories";
 
 export const BAY_CENTER: [number, number] = [-122.25, 37.75];
@@ -9,7 +9,21 @@ export const BASEMAP = {
   dark: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
 };
 
-export type LayerKey = "alerts" | "gauges" | "tides";
+export type LayerKey = "alerts" | "gauges" | "tides" | "outages";
+
+/** Outages use indigo so they never read as a flood-severity color. */
+export const OUTAGE_COLOR = "#6366f1";
+
+export function outagesGeoJson(outages: PowerOutage[]): FeatureCollection {
+  return {
+    type: "FeatureCollection",
+    features: outages.map((o) => ({
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [o.lon, o.lat] },
+      properties: { id: o.id, customers: o.customers },
+    })),
+  };
+}
 
 export function alertsGeoJson(alerts: FloodAlert[]): FeatureCollection {
   return {
@@ -61,6 +75,32 @@ export const OVERLAY_LAYERS = [
     type: "line",
     source: "alerts",
     paint: { "line-color": ["get", "color"], "line-width": 1.5, "line-opacity": 0.85 },
+  },
+  {
+    id: "outage-areas-fill",
+    type: "fill",
+    source: "outage-areas",
+    paint: { "fill-color": OUTAGE_COLOR, "fill-opacity": 0.22 },
+  },
+  {
+    id: "outage-areas-line",
+    type: "line",
+    source: "outage-areas",
+    paint: { "line-color": OUTAGE_COLOR, "line-width": 1, "line-opacity": 0.6 },
+  },
+  {
+    id: "outages-circle",
+    type: "circle",
+    source: "outages",
+    layout: { "circle-sort-key": ["get", "customers"] },
+    paint: {
+      "circle-color": OUTAGE_COLOR,
+      // Area-proportional sizing: 1 customer ≈ 3px, 100 ≈ 8px, 2,000+ ≈ 16px
+      "circle-radius": ["interpolate", ["linear"], ["sqrt", ["get", "customers"]], 1, 3, 10, 8, 45, 16],
+      "circle-opacity": 0.8,
+      "circle-stroke-color": "#ffffff",
+      "circle-stroke-width": 1,
+    },
   },
   // At-risk gauges (action stage or worse) get a pulsing halo plus a steady ring,
   // so they read as "pay attention" even when zoomed out among hundreds of dots.
@@ -120,4 +160,5 @@ export const LAYER_IDS: Record<LayerKey, string[]> = {
   alerts: ["alerts-fill", "alerts-line"],
   gauges: ["gauges-risk-pulse", "gauges-risk-ring", "gauges-circle", "gauges-selected"],
   tides: [],
+  outages: ["outage-areas-fill", "outage-areas-line", "outages-circle"],
 };

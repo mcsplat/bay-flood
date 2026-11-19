@@ -14,6 +14,7 @@ npm run dev
 | Flood, coastal, and surf alerts | NWS `api.weather.gov/alerts` (filtered to 10 Bay Area counties; zone-based alerts merged from zone shapes) | 2 min |
 | Bay water level, surge, 72h outlook | NOAA CO-OPS Tides & Currents (SF, Richmond, Alameda, Redwood City, Port Chicago). Flood thresholds come from the station's `floodlevels`, converted from STND to MLLW | 6 min |
 | Creek and river gauges, river forecasts | NOAA NWPS `api.water.noaa.gov/nwps/v1` (mostly USGS gauges) | 5 min |
+| Power outages (points + footprints) | Cal OES `Power_Outages_(View)` ArcGIS service, mirrored from PG&E's outage map | 5 min (source ~15 min) |
 
 **Tide outlook method:** surge = latest observed minus predicted. Each upcoming high tide is projected as predicted + current surge (a persistence estimate) and classified against the station's NWS/NOS flood thresholds.
 
@@ -26,8 +27,8 @@ npm run dev
 
 ## Roadmap
 
-1. PG&E outages via Cal OES statewide outage ArcGIS layer
-2. Resources: FEMA open shelters, curated sandbag stations, Genasys evacuation zones
+1. ~~PG&E outages~~ (done)
+2. Resources: FEMA open shelters (service was returning 504s on 2026-11-18), curated sandbag stations, Genasys evacuation zones
 3. County creek networks (Valley Water ALERT, OneShoreline, Marin, Sonoma, Alameda)
 4. Rain: MRMS radar, WPC excessive-rainfall outlook, CW3E atmospheric river scale
 5. User reports (photo + depth + confirmations), then 311 / CHP / 511 / social feeds

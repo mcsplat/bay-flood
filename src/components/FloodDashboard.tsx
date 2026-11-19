@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import type { FloodAlert, GaugeSummary, Selection, TideStationReport } from "@/types/flood";
+import type { FloodAlert, GaugeSummary, OutageReport, Selection, TideStationReport } from "@/types/flood";
+import { OutageDetail, OutageSummary } from "@/components/panel/OutagePanel";
 import { usePolling } from "@/hooks/usePolling";
 import { formatRelative } from "@/lib/format";
 import { FloodMap } from "@/components/map/FloodMap";
@@ -19,12 +20,19 @@ export function FloodDashboard() {
   const alertsQ = usePolling<{ alerts: FloodAlert[] }>("/api/alerts", 2 * MINUTE);
   const tidesQ = usePolling<{ stations: TideStationReport[] }>("/api/tides", 6 * MINUTE);
   const gaugesQ = usePolling<{ gauges: GaugeSummary[] }>("/api/gauges", 5 * MINUTE);
+  const outagesQ = usePolling<OutageReport>("/api/outages", 5 * MINUTE);
+  const outages = outagesQ.data;
 
   const alerts = useMemo(() => alertsQ.data?.alerts ?? [], [alertsQ.data]);
   const tides = useMemo(() => tidesQ.data?.stations ?? [], [tidesQ.data]);
   const gauges = useMemo(() => gaugesQ.data?.gauges ?? [], [gaugesQ.data]);
 
-  const [layers, setLayers] = useState<Record<LayerKey, boolean>>({ alerts: true, gauges: true, tides: true });
+  const [layers, setLayers] = useState<Record<LayerKey, boolean>>({
+    alerts: true,
+    gauges: true,
+    tides: true,
+    outages: true,
+  });
   const [selection, setSelection] = useState<Selection | null>(null);
   const [focus, setFocus] = useState<[number, number] | null>(null);
 
@@ -32,20 +40,27 @@ export function FloodDashboard() {
     (s: Selection) => {
       setSelection(s);
       const point =
-        s.type === "gauge" ? gauges.find((g) => g.lid === s.id) : s.type === "tide" ? tides.find((t) => t.id === s.id) : null;
+        s.type === "gauge"
+          ? gauges.find((g) => g.lid === s.id)
+          : s.type === "tide"
+            ? tides.find((t) => t.id === s.id)
+            : s.type === "outage"
+              ? outages?.outages.find((o) => o.id === s.id)
+              : null;
       if (point) setFocus([point.lon, point.lat]);
     },
-    [gauges, tides],
+    [gauges, tides, outages],
   );
   const back = () => setSelection(null);
 
   const loading = !alertsQ.data && !tidesQ.data && !gaugesQ.data;
-  const errors = [alertsQ.error, tidesQ.error, gaugesQ.error].filter(Boolean);
+  const errors = [alertsQ.error, tidesQ.error, gaugesQ.error, outagesQ.error].filter(Boolean);
   const updated = Math.max(alertsQ.updatedAt ?? 0, tidesQ.updatedAt ?? 0, gaugesQ.updatedAt ?? 0);
 
   const selectedAlert = selection?.type === "alert" ? alerts.find((a) => a.id === selection.id) : undefined;
   const selectedTide = selection?.type === "tide" ? tides.find((t) => t.id === selection.id) : undefined;
   const selectedGauge = selection?.type === "gauge" ? gauges.find((g) => g.lid === selection.id) : undefined;
+  const selectedOutage = selection?.type === "outage" ? outages?.outages.find((o) => o.id === selection.id) : undefined;
 
   return (
     <div className="flex h-dvh flex-col md:flex-row">
@@ -90,23 +105,26 @@ export function FloodDashboard() {
             <TideDetail station={selectedTide} onBack={back} />
           ) : selectedGauge ? (
             <GaugeDetailCard summary={selectedGauge} onBack={back} />
+          ) : selectedOutage ? (
+            <OutageDetail outage={selectedOutage} onBack={back} />
           ) : (
             <>
               <SummaryCard alerts={alerts} gauges={gauges} tides={tides} />
               <AlertList alerts={alerts} onSelect={select} />
               <TideList tides={tides} onSelect={select} />
               <GaugeList gauges={gauges} onSelect={select} />
+              {outages && <OutageSummary report={outages} onSelect={select} />}
             </>
           )}
           <p className="px-1 pb-2 text-[11px] leading-snug text-muted">
             Not an official warning service. Follow evacuation orders from local officials and call 911 in an emergency.
-            Data: NWS, NOAA CO-OPS, NOAA NWPS/USGS.
+            Data: NWS, NOAA CO-OPS, NOAA NWPS/USGS, Cal OES.
           </p>
         </div>
       </aside>
 
       <main className="relative order-1 h-[45dvh] md:order-2 md:h-auto md:flex-1">
-        <FloodMap alerts={alerts} gauges={gauges} tides={tides} layers={layers} selection={selection} focus={focus} onSelect={select} />
+        <FloodMap alerts={alerts} gauges={gauges} tides={tides} outages={outages} layers={layers} selection={selection} focus={focus} onSelect={select} />
         <LayerToggles layers={layers} onChange={setLayers} />
       </main>
     </div>
