@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import type { FloodAlert, GaugeSummary, OutageReport, Selection, TideStationReport, TrafficCamera } from "@/types/flood";
 import { CameraDetail } from "@/components/camera/CameraPanel";
 import { OutageDetail, OutageSummary } from "@/components/panel/OutagePanel";
@@ -86,6 +87,10 @@ export function FloodDashboard() {
               </p>
             </div>
           </div>
+          <div className="flex items-center gap-3">
+          <Link href="/about" className="text-xs font-medium text-muted hover:text-foreground">
+            About
+          </Link>
           <span className="flex items-center gap-1.5 text-[11px] font-medium text-muted">
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
@@ -93,6 +98,7 @@ export function FloodDashboard() {
             </span>
             Live
           </span>
+          </div>
         </header>
 
         <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
@@ -127,7 +133,8 @@ export function FloodDashboard() {
             </>
           )}
           <p className="px-1 pb-2 text-[11px] leading-snug text-muted">
-            Not an official warning service. Follow evacuation orders from local officials and call 911 in an emergency.
+            Not an official warning service. Follow evacuation orders from local officials and call 911 in an emergency.{" "}
+            <Link href="/about" className="underline">About this app</Link>.
             Data: NWS, NOAA CO-OPS, NOAA NWPS/USGS, Cal OES, Caltrans.
           </p>
         </div>
