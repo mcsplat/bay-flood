@@ -72,3 +72,29 @@ body {
 .maplibregl-ctrl-top-right {
   margin-top: env(safe-area-inset-top);
 }
+
+/* "You are here" dot for Use my location: solid blue with a soft pulse. */
+.user-location-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: #2563eb;
+  border: 3px solid #fff;
+  box-shadow: 0 0 0 1px rgb(0 0 0 / 0.15), 0 2px 6px rgb(0 0 0 / 0.3);
+  position: relative;
+}
+.user-location-dot::after {
+  content: "";
+  position: absolute;
+  inset: -12px;
+  border-radius: 9999px;
+  background: rgb(37 99 235 / 0.25);
+  animation: user-location-pulse 2s ease-out infinite;
+}
+@keyframes user-location-pulse {
+  from { transform: scale(0.4); opacity: 1; }
+  to { transform: scale(1.4); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .user-location-dot::after { animation: none; opacity: 0.6; }
+}

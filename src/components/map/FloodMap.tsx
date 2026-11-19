@@ -19,6 +19,7 @@ import { wireInteractions } from "./interactions";
 import { useRiskPulse, useTideMarkers } from "./mapEffects";
 import { addRadarLayers, useRadar } from "./radar";
 import { RadarControl } from "./RadarControl";
+import { LocateButton, useLocate } from "./LocateButton";
 import {
   BASEMAP,
   BAY_CENTER,
@@ -76,7 +77,6 @@ export function FloodMap({ alerts, gauges, tides, outages, cameras, layers, sele
         attributionControl: { compact: true },
       });
       m.addControl(new ml.NavigationControl({ showCompass: false }), "top-right");
-      m.addControl(new ml.GeolocateControl({ trackUserLocation: false }), "top-right");
 
       m.on("load", () => {
         for (const src of ["alerts", "outage-areas", "outages", "gauges"]) {
@@ -170,6 +170,7 @@ export function FloodMap({ alerts, gauges, tides, outages, cameras, layers, sele
   useRiskPulse(map, ready && layers.gauges && gauges.some((g) => rank(g.category) >= 1));
   useTideMarkers(map, mlRef, ready, tides, layers.tides, selectRef);
   const radar = useRadar(map, ready, layers.radar);
+  const located = useLocate(map, mlRef, ready);
 
   useEffect(() => {
     const m = map.current;
@@ -193,6 +194,7 @@ export function FloodMap({ alerts, gauges, tides, outages, cameras, layers, sele
     <>
       <div ref={container} className="h-full w-full" role="region" aria-label="Bay Area flood map" />
       {layers.radar && <RadarControl radar={radar} />}
+      <LocateButton state={located} />
     </>
   );
 }
