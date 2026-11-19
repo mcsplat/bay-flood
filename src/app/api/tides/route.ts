@@ -1,10 +1,11 @@
+import { cachedJson, errorJson } from "@/lib/http";
 import { getTideReports } from "@/lib/api/tides";
 
 export async function GET() {
   try {
-    return Response.json({ stations: await getTideReports(), fetchedAt: new Date().toISOString() });
+    return cachedJson({ stations: await getTideReports(), fetchedAt: new Date().toISOString() }, 180);
   } catch (err) {
     console.error("tides", err);
-    return Response.json({ error: "NOAA Tides & Currents is unavailable" }, { status: 502 });
+    return errorJson("NOAA Tides & Currents is unavailable", 502);
   }
 }

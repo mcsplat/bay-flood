@@ -1,10 +1,11 @@
+import { cachedJson, errorJson } from "@/lib/http";
 import { getBayAreaAlerts } from "@/lib/api/nws";
 
 export async function GET() {
   try {
-    return Response.json({ alerts: await getBayAreaAlerts(), fetchedAt: new Date().toISOString() });
+    return cachedJson({ alerts: await getBayAreaAlerts(), fetchedAt: new Date().toISOString() }, 60);
   } catch (err) {
     console.error("alerts", err);
-    return Response.json({ error: "National Weather Service is unavailable" }, { status: 502 });
+    return errorJson("National Weather Service is unavailable", 502);
   }
 }

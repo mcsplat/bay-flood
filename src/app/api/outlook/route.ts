@@ -1,3 +1,4 @@
+import { cachedJson, errorJson } from "@/lib/http";
 import { getBayAreaAlerts } from "@/lib/api/nws";
 import { getBayAreaGauges } from "@/lib/api/gauges";
 import { getRainOutlook } from "@/lib/api/rain";
@@ -13,9 +14,9 @@ export async function GET() {
       getTideReports().catch(() => []),
       getBayAreaAlerts().catch(() => []),
     ]);
-    return Response.json(buildOutlook(rain, gauges, tides, alerts));
+    return cachedJson(buildOutlook(rain, gauges, tides, alerts), 300);
   } catch (err) {
     console.error("outlook", err);
-    return Response.json({ error: "Forecast outlook is unavailable" }, { status: 502 });
+    return errorJson("Forecast outlook is unavailable", 502);
   }
 }

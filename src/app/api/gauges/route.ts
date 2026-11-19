@@ -1,10 +1,11 @@
+import { cachedJson, errorJson } from "@/lib/http";
 import { getBayAreaGauges } from "@/lib/api/gauges";
 
 export async function GET() {
   try {
-    return Response.json({ gauges: await getBayAreaGauges(), fetchedAt: new Date().toISOString() });
+    return cachedJson({ gauges: await getBayAreaGauges(), fetchedAt: new Date().toISOString() }, 120);
   } catch (err) {
     console.error("gauges", err);
-    return Response.json({ error: "National Water Prediction Service is unavailable" }, { status: 502 });
+    return errorJson("National Water Prediction Service is unavailable", 502);
   }
 }
