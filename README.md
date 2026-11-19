@@ -1,36 +1,36 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Bay Flood Watch
 
-## Getting Started
-
-First, run the development server:
+Live flood awareness for the San Francisco Bay Area: what is flooding now, and what the next 72 hours look like.
 
 ```bash
+npm install   # also copies MapLibre's worker into public/maplibre/
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Data layers (MVP)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Layer | Source | Refresh |
+|---|---|---|
+| Flood, coastal, and surf alerts | NWS `api.weather.gov/alerts` (filtered to 10 Bay Area counties; zone-based alerts merged from zone shapes) | 2 min |
+| Bay water level, surge, 72h outlook | NOAA CO-OPS Tides & Currents (SF, Richmond, Alameda, Redwood City, Port Chicago). Flood thresholds come from the station's `floodlevels`, converted from STND to MLLW | 6 min |
+| Creek and river gauges, river forecasts | NOAA NWPS `api.water.noaa.gov/nwps/v1` (mostly USGS gauges) | 5 min |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+**Tide outlook method:** surge = latest observed minus predicted. Each upcoming high tide is projected as predicted + current surge (a persistence estimate) and classified against the station's NWS/NOS flood thresholds.
 
-## Learn More
+## Layout
 
-To learn more about Next.js, take a look at the following resources:
+- `src/lib/api/` server-side fetchers (`'use cache'` + `cacheLife`)
+- `src/app/api/*` route handlers the client polls
+- `src/types/flood.ts` shared types (for a future Expo app)
+- `src/components/` map (MapLibre + CARTO basemap), side panel, SVG charts
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Roadmap
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. PG&E outages via Cal OES statewide outage ArcGIS layer
+2. Resources: FEMA open shelters, curated sandbag stations, Genasys evacuation zones
+3. County creek networks (Valley Water ALERT, OneShoreline, Marin, Sonoma, Alameda)
+4. Rain: MRMS radar, WPC excessive-rainfall outlook, CW3E atmospheric river scale
+5. User reports (photo + depth + confirmations), then 311 / CHP / 511 / social feeds
+6. Push alerts for a saved address
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Not an official warning service.
