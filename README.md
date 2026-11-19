@@ -6,7 +6,7 @@
 
 Live flood awareness for the San Francisco Bay Area: what's flooding now, and which way things are heading over the next 48 hours.
 
-**→ [bay-flood.vercel.app](https://bay-flood.vercel.app)** (installable on iPhone and Android: Share → Add to Home Screen)
+**→ [bayflood.watch](https://bayflood.watch)** (installable on iPhone and Android: Share → Add to Home Screen)
 
 [![CI](https://github.com/mcsplat/bay-flood/actions/workflows/ci.yml/badge.svg)](https://github.com/mcsplat/bay-flood/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)

@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://bay-flood.vercel.app"),
+  metadataBase: new URL("https://bayflood.watch"),
   title: "Bay Flood Watch",
   description: "Live flood alerts, creek gauges, and Bay tide outlook for the San Francisco Bay Area.",
   applicationName: "Bay Flood Watch",

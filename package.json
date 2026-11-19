@@ -34,7 +34,7 @@
   },
   "license": "MIT",
   "description": "Live flood awareness map for the SF Bay Area: NWS alerts, creek gauges, Bay tides, outages, traffic cams, and a 48-hour outlook.",
-  "homepage": "https://bay-flood.vercel.app",
+  "homepage": "https://bayflood.watch",
   "repository": {
     "type": "git",
     "url": "https://github.com/mcsplat/bay-flood.git"
