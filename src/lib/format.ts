@@ -34,3 +34,13 @@ export function signedFeet(v: number | null | undefined): string {
   if (v == null) return "—";
   return `${v >= 0 ? "+" : "−"}${Math.abs(v).toFixed(1)} ft`;
 }
+
+/** "↑ Rising 0.42 ft/hr", "≈ Tidal (rises and falls with the tide)", etc. */
+export function trendLabel(trend: import("@/types/flood").GaugeTrend | null | undefined): string | null {
+  if (!trend) return null;
+  if (trend.tidal) return "≈ Tidal: rises and falls with the tide";
+  const rate = Math.abs(trend.ratePerHour).toFixed(2);
+  if (trend.direction === "rising") return `↑ Rising ${rate} ft/hr`;
+  if (trend.direction === "falling") return `↓ Falling ${rate} ft/hr`;
+  return "→ Steady";
+}

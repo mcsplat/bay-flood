@@ -16,6 +16,12 @@ npm run dev
 | Creek and river gauges, river forecasts | NOAA NWPS `api.water.noaa.gov/nwps/v1` (mostly USGS gauges) | 5 min |
 | Power outages (points + footprints) | Cal OES `Power_Outages_(View)` ArcGIS service, mirrored from PG&E's outage map | 5 min (source ~15 min) |
 
+| Rain forecast (8 points, hourly) | NWS gridded forecast `api.weather.gov/gridpoints` | 15 min |
+
+**Outlook (next 48 hours):** `/api/outlook` combines rain, creeks, tides, and alerts with simple, explainable rules: each signal votes *worse*, *better*, or *neutral* and contributes a plain-language reason. It also lists key moments: the Bay-wide rain peak, official river crests, rough "reaches flood stage at the current rate" estimates, risky high tides, and heavy rain overlapping a high tide.
+
+**Gauge trends:** rate of change over the last ~2.5 hours (least-squares slope). Gauges that rise and fall with the tide are detected by correlating each gauge with itself one tidal day (~24.8h) earlier, and are excluded from runoff trends and estimates.
+
 **Tide outlook method:** surge = latest observed minus predicted. Each upcoming high tide is projected as predicted + current surge (a persistence estimate) and classified against the station's NWS/NOS flood thresholds.
 
 ## Layout

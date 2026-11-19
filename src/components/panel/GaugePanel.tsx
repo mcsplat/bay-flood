@@ -3,7 +3,7 @@
 import type { GaugeDetail, GaugeSummary, Selection, TrafficCamera } from "@/types/flood";
 import { NearbyCameras } from "@/components/camera/CameraPanel";
 import { CATEGORY_COLOR, rank } from "@/lib/categories";
-import { formatFeet, formatRelative, formatTime } from "@/lib/format";
+import { formatFeet, formatRelative, formatTime, trendLabel } from "@/lib/format";
 import { usePolling } from "@/hooks/usePolling";
 import { TimeSeriesChart, type ChartThreshold } from "@/components/charts/TimeSeriesChart";
 import { BackButton } from "./AlertList";
@@ -42,6 +42,7 @@ export function GaugeList({ gauges, onSelect }: { gauges: GaugeSummary[]; onSele
                     ` · ${Math.abs(g.observed.stage - g.thresholds.minor).toFixed(1)} ft ${g.observed.stage >= g.thresholds.minor ? "above" : "below"} flood stage`}
                   {" · "}
                   {formatRelative(g.observed?.time)}
+                  {trendLabel(g.trend) && <span className="block">{trendLabel(g.trend)}</span>}
                   {g.forecast && rank(g.forecast.category) > rank(g.observed?.category ?? "unknown") &&
                     ` · forecast ${formatFeet(g.forecast.stage)} ${formatTime(g.forecast.time)}`}
                 </p>
@@ -88,6 +89,7 @@ export function GaugeDetailCard({ summary, onBack, cameras, onSelect }: DetailPr
           <p className="text-[11px] text-muted">Stage now</p>
           <p className="font-semibold tabular-nums">{formatFeet(summary.observed?.stage, 2)}</p>
           <p className="text-[11px] text-muted">{formatRelative(summary.observed?.time)}</p>
+          {trendLabel(summary.trend) && <p className="text-[11px] font-medium">{trendLabel(summary.trend)}</p>}
         </div>
         <div className="rounded-lg bg-surface-muted p-2">
           <p className="text-[11px] text-muted">Forecast</p>

@@ -1,6 +1,7 @@
 import { cacheLife } from "next/cache";
 import type { FloodCategory, GaugeDetail, GaugeSummary, TideThresholds, TimePoint } from "@/types/flood";
 import { worst } from "@/lib/categories";
+import { gaugeTrend } from "@/lib/trends";
 import { getJson, mapLimit } from "./http";
 
 const NWPS = "https://api.water.noaa.gov/nwps/v1";
@@ -63,6 +64,39 @@ async function getGaugeThresholds(lid: string): Promise<TideThresholds | null> {
   return thresholdsFrom(meta);
 }
 
+interface NwpsSeries {
+  issuedTime?: string;
+  primaryUnits?: string;
+  data: { validTime: string; primary: number }[];
+}
+
+interface StageFlow {
+  observed: TimePoint[];
+  forecast: TimePoint[];
+  forecastIssued: string | null;
+  units: string | null;
+}
+
+const toSeries = (s?: NwpsSeries): TimePoint[] =>
+  (s?.data ?? [])
+    .filter((d) => d.primary !== MISSING)
+    .map((d) => ({ t: d.validTime, v: d.primary }));
+
+/** Observed + forecast stage for one gauge, shared by the list (trends) and the detail view. */
+async function getStageFlow(lid: string): Promise<StageFlow> {
+  "use cache";
+  cacheLife({ stale: 120, revalidate: 300, expire: 3600 });
+  const flow = await getJson<{ observed?: NwpsSeries; forecast?: NwpsSeries }>(
+    `${NWPS}/gauges/${encodeURIComponent(lid)}/stageflow`,
+  );
+  return {
+    observed: toSeries(flow.observed),
+    forecast: toSeries(flow.forecast),
+    forecastIssued: flow.forecast?.issuedTime ?? null,
+    units: flow.observed?.primaryUnits ?? null,
+  };
+}
+
 export async function getBayAreaGauges(): Promise<GaugeSummary[]> {
   "use cache";
   cacheLife({ stale: 120, revalidate: 300, expire: 3600 });
@@ -74,7 +108,8 @@ export async function getBayAreaGauges(): Promise<GaugeSummary[]> {
     "bbox.ymax": String(BAY_BBOX.ymax),
     srid: "EPSG_4326",
   });
-  const { gauges } = await getJson<{ gauges: NwpsGauge[] }>(`${NWPS}/gauges?${qs}`);
+  // The regional list can take 20–30s under storm load; individual gauges respond in ~1s.
+  const { gauges } = await getJson<{ gauges: NwpsGauge[] }>(`${NWPS}/gauges?${qs}`, { timeoutMs: 45_000 });
 
   const live = gauges.filter(
     (g) =>
@@ -89,6 +124,14 @@ export async function getBayAreaGauges(): Promise<GaugeSummary[]> {
       : getGaugeThresholds(g.lid).catch(() => null),
   );
 
+  // Recent direction + official crest for gauges that have flood stages.
+  const trends = await mapLimit(live, 8, async (g, i) => {
+    const t = thresholds[i];
+    if (!t) return null;
+    const flow = await getStageFlow(g.lid).catch(() => null);
+    return flow ? gaugeTrend(flow.observed, flow.forecast, t) : null;
+  });
+
   return live.map((g, i) => {
     const observed = toReading(g.status.observed);
     const forecast = toReading(g.status.forecast);
@@ -102,20 +145,10 @@ export async function getBayAreaGauges(): Promise<GaugeSummary[]> {
       forecast,
       category: worst(observed?.category, forecast?.category),
       thresholds: thresholds[i],
+      trend: trends[i],
     };
   });
 }
-
-interface NwpsSeries {
-  issuedTime?: string;
-  primaryUnits?: string;
-  data: { validTime: string; primary: number }[];
-}
-
-const toSeries = (s?: NwpsSeries): TimePoint[] =>
-  (s?.data ?? [])
-    .filter((d) => d.primary !== MISSING)
-    .map((d) => ({ t: d.validTime, v: d.primary }));
 
 export async function getGaugeDetail(lid: string): Promise<GaugeDetail> {
   "use cache";
@@ -124,9 +157,7 @@ export async function getGaugeDetail(lid: string): Promise<GaugeDetail> {
   const safe = encodeURIComponent(lid);
   const [meta, flow] = await Promise.all([
     getJson<NwpsGaugeMeta>(`${NWPS}/gauges/${safe}`),
-    getJson<{ observed?: NwpsSeries; forecast?: NwpsSeries }>(`${NWPS}/gauges/${safe}/stageflow`).catch(
-      () => ({}) as { observed?: NwpsSeries; forecast?: NwpsSeries },
-    ),
+    getStageFlow(lid).catch((): StageFlow => ({ observed: [], forecast: [], forecastIssued: null, units: null })),
   ]);
 
   const cutoff = Date.now() - 72 * 3_600_000;
@@ -134,10 +165,10 @@ export async function getGaugeDetail(lid: string): Promise<GaugeDetail> {
   return {
     lid: meta.lid,
     name: meta.name.replace(/\s+/g, " ").trim(),
-    unit: meta.flood?.stageUnits || flow.observed?.primaryUnits || "ft",
+    unit: meta.flood?.stageUnits || flow.units || "ft",
     thresholds: thresholdsFrom(meta) ?? { action: null, minor: null, moderate: null, major: null },
-    observed: toSeries(flow.observed).filter((p) => Date.parse(p.t) >= cutoff),
-    forecast: toSeries(flow.forecast),
-    forecastIssued: flow.forecast?.issuedTime ?? null,
+    observed: flow.observed.filter((p) => Date.parse(p.t) >= cutoff),
+    forecast: flow.forecast,
+    forecastIssued: flow.forecastIssued,
   };
 }

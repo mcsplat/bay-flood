@@ -1,6 +1,6 @@
 import type { GaugeSummary, TideThresholds } from "@/types/flood";
 import { CATEGORY_COLOR, CATEGORY_LABEL, rank } from "@/lib/categories";
-import { formatRelative, formatTime } from "@/lib/format";
+import { formatRelative, formatTime, trendLabel } from "@/lib/format";
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 const ft = (v: number) => `${v.toFixed(2)} ft`;
@@ -84,8 +84,19 @@ export function gaugePopupHtml(g: GaugeSummary): string {
       (t.major != null ? row("Major", ft(t.major)) : "");
   }
 
-  if (g.forecast) {
+  const trend = trendLabel(g.trend);
+  if (trend) {
+    const color = g.trend?.tidal ? "var(--muted)" : g.trend?.direction === "rising" ? "#b45309" : g.trend?.direction === "falling" ? "#059669" : "var(--muted)";
+    body += row("Last 2 hours", `<span style="color:${color};font-weight:600">${esc(trend)}</span>`);
+  }
+  const crest = g.trend?.crest;
+  if (crest) {
+    body += row(crest.stillRising ? "Forecast peak" : "Forecast crest", ft(crest.stage), esc(formatTime(crest.time)));
+  } else if (g.forecast) {
     body += row("Forecast", ft(g.forecast.stage), esc(formatTime(g.forecast.time)));
+  }
+  if (g.trend?.floodStageEta) {
+    body += row("Flood stage at this rate", `<span style="color:#dc2626;font-weight:600">~${esc(formatTime(g.trend.floodStageEta))}</span>`);
   }
 
   return `<div style="min-width:220px;max-width:260px">

@@ -3,7 +3,8 @@
 import { useCallback, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import type { FloodAlert, GaugeSummary, OutageReport, Selection, TideStationReport, TrafficCamera } from "@/types/flood";
+import type { FloodAlert, GaugeSummary, Outlook, OutageReport, Selection, TideStationReport, TrafficCamera } from "@/types/flood";
+import { OutlookCard } from "@/components/outlook/OutlookCard";
 import { CameraDetail } from "@/components/camera/CameraPanel";
 import { OutageDetail, OutageSummary } from "@/components/panel/OutagePanel";
 import { usePolling } from "@/hooks/usePolling";
@@ -24,6 +25,7 @@ export function FloodDashboard() {
   const tidesQ = usePolling<{ stations: TideStationReport[] }>("/api/tides", 6 * MINUTE);
   const gaugesQ = usePolling<{ gauges: GaugeSummary[] }>("/api/gauges", 5 * MINUTE);
   const outagesQ = usePolling<OutageReport>("/api/outages", 5 * MINUTE);
+  const outlookQ = usePolling<Outlook>("/api/outlook", 10 * MINUTE);
   const outages = outagesQ.data;
   const camerasQ = usePolling<{ cameras: TrafficCamera[] }>("/api/cameras", 60 * MINUTE);
   const cameras = useMemo(() => camerasQ.data?.cameras ?? [], [camerasQ.data]);
@@ -126,6 +128,7 @@ export function FloodDashboard() {
           ) : (
             <>
               <SummaryCard alerts={alerts} gauges={gauges} tides={tides} />
+              <OutlookCard outlook={outlookQ.data} error={outlookQ.error} onFocus={setFocus} />
               <AlertList alerts={alerts} onSelect={select} />
               <TideList tides={tides} onSelect={select} />
               <GaugeList gauges={gauges} onSelect={select} />

@@ -76,6 +76,57 @@ export interface GaugeSummary {
   category: FloodCategory;
   /** Official NWS stage thresholds; null when the gauge has no flood stage. */
   thresholds: TideThresholds | null;
+  /** Recent direction and official crest; only for gauges with flood stages. */
+  trend: GaugeTrend | null;
+}
+
+export type Direction = "rising" | "falling" | "steady";
+
+export interface GaugeTrend {
+  direction: Direction;
+  /** Change over the last ~2 hours, ft per hour */
+  ratePerHour: number;
+  /** Highest point of the official NWS forecast, if one is current */
+  crest: { stage: number; time: string; category: FloodCategory; stillRising: boolean } | null;
+  /** Rough time to reach flood stage at the current rate (no official forecast) */
+  floodStageEta: string | null;
+  /** Rises and falls with the tide; excluded from runoff trends */
+  tidal: boolean;
+}
+
+export interface RainPoint {
+  id: string;
+  name: string;
+  lat: number;
+  lon: number;
+  /** Hourly rainfall rate, inches/hour, from NWS gridded forecast blocks */
+  hourly: TimePoint[];
+  next6h: number;
+  next24h: number;
+  last6h: number;
+  peak: { start: string; end: string; rate: number } | null;
+}
+
+export type OutlookDirection = "worsening" | "steady" | "improving";
+
+export interface OutlookMoment {
+  time: string;
+  kind: "rain" | "tide" | "crest" | "flood-stage" | "compound";
+  severity: FloodCategory;
+  title: string;
+  detail: string;
+  /** Where to focus the map */
+  at?: [number, number];
+}
+
+export interface Outlook {
+  direction: OutlookDirection;
+  reasons: string[];
+  rain: RainPoint[];
+  /** Average hourly rain rate across points, for the timeline */
+  bayRain: TimePoint[];
+  moments: OutlookMoment[];
+  generatedAt: string;
 }
 
 export interface GaugeDetail {
