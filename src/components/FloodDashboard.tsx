@@ -41,7 +41,7 @@ export function FloodDashboard() {
     tides: true,
     outages: true,
     cameras: true,
-    radar: false, // opt-in: heavy imagery, and busy on top of everything else
+    radar: true,
   });
   const [selection, setSelection] = useState<Selection | null>(null);
   const [focus, setFocus] = useState<[number, number] | null>(null);
