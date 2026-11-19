@@ -2,6 +2,12 @@
 @import "maplibre-gl/dist/maplibre-gl.css";
 
 :root {
+  /* Brand: the logo's night-bay navy and rising-water blues */
+  --brand-navy: #0b2540;
+  --brand-deep: #0c4a6e;
+  --brand-water: #0ea5e9;
+  --brand-foam: #bae6fd;
+
   --background: #f6f7f9;
   --surface: #ffffff;
   --surface-muted: #eef1f4;
@@ -26,6 +32,10 @@
 }
 
 @theme inline {
+  --color-brand-navy: var(--brand-navy);
+  --color-brand-deep: var(--brand-deep);
+  --color-brand-water: var(--brand-water);
+  --color-brand-foam: var(--brand-foam);
   --color-background: var(--background);
   --color-surface: var(--surface);
   --color-surface-muted: var(--surface-muted);

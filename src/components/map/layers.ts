@@ -9,7 +9,7 @@ export const BASEMAP = {
   dark: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
 };
 
-export type LayerKey = "alerts" | "gauges" | "tides" | "outages" | "cameras";
+export type LayerKey = "alerts" | "gauges" | "tides" | "outages" | "cameras" | "radar";
 
 export const CAMERA_COLOR = "#334155";
 
@@ -214,4 +214,5 @@ export const LAYER_IDS: Record<LayerKey, string[]> = {
   tides: [],
   outages: ["outage-areas-fill", "outage-areas-line", "outages-circle"],
   cameras: ["cameras-cluster", "cameras-cluster-count", "cameras-point"],
+  radar: [], // managed by useRadar (frames swap by opacity)
 };

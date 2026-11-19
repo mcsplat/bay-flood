@@ -17,6 +17,8 @@ import { outagePopupHtml } from "./outagePopup";
 import { cameraPopupHtml, clusterPopupHtml } from "./cameraPopup";
 import { wireInteractions } from "./interactions";
 import { useRiskPulse, useTideMarkers } from "./mapEffects";
+import { addRadarLayers, useRadar } from "./radar";
+import { RadarControl } from "./RadarControl";
 import {
   BASEMAP,
   BAY_CENTER,
@@ -83,6 +85,9 @@ export function FloodMap({ alerts, gauges, tides, outages, cameras, layers, sele
         // ~800 cameras: cluster until street-level zoom.
         m.addSource("cameras", { type: "geojson", data: EMPTY, cluster: true, clusterMaxZoom: 11, clusterRadius: 45 });
         for (const layer of OVERLAY_LAYERS) m.addLayer(layer as never);
+        addRadarLayers(m, "alerts-fill");
+        // Keep credits collapsed behind the ⓘ button so they don't cover controls on phones.
+        m.getContainer().querySelector(".maplibregl-ctrl-attrib")?.classList.remove("maplibregl-compact-show");
 
         const popup = new ml.Popup({ closeButton: false, offset: 14, maxWidth: "280px" });
         const point = (id: string, index: Map<string, { lat: number; lon: number }>, html: (x: never) => string) => {
@@ -164,6 +169,7 @@ export function FloodMap({ alerts, gauges, tides, outages, cameras, layers, sele
 
   useRiskPulse(map, ready && layers.gauges && gauges.some((g) => rank(g.category) >= 1));
   useTideMarkers(map, mlRef, ready, tides, layers.tides, selectRef);
+  const radar = useRadar(map, ready, layers.radar);
 
   useEffect(() => {
     const m = map.current;
@@ -183,5 +189,10 @@ export function FloodMap({ alerts, gauges, tides, outages, cameras, layers, sele
     if (ready && focus) map.current?.flyTo({ center: focus, zoom: Math.max(map.current.getZoom(), 10.5), speed: 1.4 });
   }, [ready, focus]);
 
-  return <div ref={container} className="h-full w-full" role="region" aria-label="Bay Area flood map" />;
+  return (
+    <>
+      <div ref={container} className="h-full w-full" role="region" aria-label="Bay Area flood map" />
+      {layers.radar && <RadarControl radar={radar} />}
+    </>
+  );
 }

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import Link from "next/link";
+import { Wordmark, WaveEdge } from "@/components/brand/Wordmark";
 
 export const metadata: Metadata = {
   title: "About · Bay Flood Watch",
@@ -17,22 +17,24 @@ const SOURCES = [
 
 export default function AboutPage() {
   return (
-    <main className="mx-auto w-full max-w-2xl px-4 py-10 sm:py-14">
-      <Link href="/" className="text-sm font-medium text-accent hover:underline">
-        ← Back to the map
-      </Link>
-
-      <header className="mt-6 flex items-center gap-4">
-        <Image src="/brand/avatar.svg" alt="" width={56} height={56} className="h-14 w-14 rounded-2xl" unoptimized />
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">About Bay Flood Watch</h1>
-          <p className="text-sm text-muted">Live flood awareness for the San Francisco Bay Area</p>
+    <main className="w-full">
+      <div className="bg-gradient-to-br from-brand-navy to-brand-deep pt-[env(safe-area-inset-top)] text-white">
+        <div className="mx-auto max-w-2xl px-4 pb-6 pt-8 sm:pt-12">
+          <Link href="/" className="text-sm font-medium text-brand-foam hover:text-white">
+            ← Back to the map
+          </Link>
+          <h1 className="mt-6">
+            <Wordmark tone="light" size="md" tagline="About this project" />
+          </h1>
         </div>
-      </header>
+        <WaveEdge />
+      </div>
+
+      <div className="mx-auto max-w-2xl px-4 pb-14">
 
       <div
         role="note"
-        className="mt-8 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm leading-relaxed"
+        className="mt-6 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm leading-relaxed"
       >
         <p className="font-semibold">Informative, not authoritative</p>
         <p className="mt-1">
@@ -88,6 +90,7 @@ export default function AboutPage() {
           <li>Sign up for your county&apos;s official emergency alerts; this app does not replace them.</li>
         </ul>
       </Section>
+      </div>
     </main>
   );
 }

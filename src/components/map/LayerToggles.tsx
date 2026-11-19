@@ -9,6 +9,7 @@ const OPTIONS: { key: LayerKey; label: string; swatch: string }[] = [
   { key: "tides", label: "Bay tides", swatch: "#0284c7" },
   { key: "outages", label: "Power outages", swatch: OUTAGE_COLOR },
   { key: "cameras", label: "Traffic cams", swatch: CAMERA_COLOR },
+  { key: "radar", label: "Radar", swatch: "#02fd02" },
 ];
 
 interface Props {

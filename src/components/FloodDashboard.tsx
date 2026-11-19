@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import type { FloodAlert, GaugeSummary, Outlook, OutageReport, Selection, TideStationReport, TrafficCamera } from "@/types/flood";
 import { OutlookCard } from "@/components/outlook/OutlookCard";
 import { InstallHint } from "@/components/pwa/InstallHint";
+import { AppHeader } from "@/components/brand/AppHeader";
 import { CameraDetail } from "@/components/camera/CameraPanel";
 import { OutageDetail, OutageSummary } from "@/components/panel/OutagePanel";
 import { usePolling } from "@/hooks/usePolling";
@@ -41,6 +41,7 @@ export function FloodDashboard() {
     tides: true,
     outages: true,
     cameras: true,
+    radar: false, // opt-in: heavy imagery, and busy on top of everything else
   });
   const [selection, setSelection] = useState<Selection | null>(null);
   const [focus, setFocus] = useState<[number, number] | null>(null);
@@ -81,29 +82,16 @@ export function FloodDashboard() {
         className="order-2 flex min-h-0 flex-1 flex-col border-border bg-background md:order-1 md:w-[400px] md:flex-none md:border-r md:pt-[env(safe-area-inset-top)]"
         aria-label="Flood conditions"
       >
-        <header className="flex items-center justify-between border-b border-border px-4 py-3">
-          <div className="flex items-center gap-2">
-            <Image src="/brand/avatar.svg" alt="" width={28} height={28} className="h-7 w-7 rounded-lg" priority unoptimized />
-            <div>
-              <p className="text-sm font-semibold leading-none">Bay Flood Watch</p>
-              <p className="mt-0.5 text-[11px] text-muted">
-                {offline ? "Showing saved data" : updated ? `Updated ${formatRelative(new Date(updated).toISOString())}` : "Loading live data…"}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3">
-          <Link href="/about" className="text-xs font-medium text-muted hover:text-foreground">
-            About
-          </Link>
-          <span className="flex items-center gap-1.5 text-[11px] font-medium text-muted">
-            <span className="relative flex h-2 w-2">
-              {!offline && <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />}
-              <span className={`relative inline-flex h-2 w-2 rounded-full ${offline ? "bg-slate-400" : "bg-emerald-500"}`} />
-            </span>
-            {offline ? "Offline" : "Live"}
-          </span>
-          </div>
-        </header>
+        <AppHeader
+          offline={offline}
+          status={
+            offline
+              ? "Showing saved data"
+              : updated
+                ? `Updated ${formatRelative(new Date(updated).toISOString())}`
+                : "Loading live data…"
+          }
+        />
 
         <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
           <InstallHint />
