@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640" role="img" aria-label="Bay Flood Watch: live flood conditions for the San Francisco Bay Area">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b2540"/>
+      <stop offset="1" stop-color="#0c4a6e"/>
+    </linearGradient>
+    <linearGradient id="waterTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#38bdf8"/>
+      <stop offset="1" stop-color="#0ea5e9"/>
+    </linearGradient>
+    <linearGradient id="waterDeep" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0284c7"/>
+      <stop offset="1" stop-color="#075985"/>
+    </linearGradient>
+    <clipPath id="drop">
+      <path d="M512 150 C 512 150 236 470 236 625 A 276 276 0 0 0 788 625 C 788 470 512 150 512 150 Z"/>
+    </clipPath>
+  </defs>
+  <rect width="1280" height="640" fill="url(#bg)"/>
+
+  <!-- Rising water across the bottom of the card -->
+  <path d="M0 560 Q 80 530 160 560 T 320 560 T 480 560 T 640 560 T 800 560 T 960 560 T 1120 560 T 1280 560 V 640 H 0 Z" fill="#0ea5e9" opacity="0.35"/>
+  <path d="M0 595 Q 80 570 160 595 T 320 595 T 480 595 T 640 595 T 800 595 T 960 595 T 1120 595 T 1280 595 V 640 H 0 Z" fill="#0284c7" opacity="0.6"/>
+
+  <!-- Logo mark, scaled from the 1024 avatar -->
+  <g transform="translate(70 70) scale(0.42)">
+    <path d="M512 150 C 512 150 236 470 236 625 A 276 276 0 0 0 788 625 C 788 470 512 150 512 150 Z" fill="#f0f9ff"/>
+    <g clip-path="url(#drop)">
+      <path d="M150 612 Q 245 562 340 612 T 530 612 T 720 612 T 910 612 V 960 H 150 Z" fill="url(#waterTop)"/>
+      <path d="M110 700 Q 205 655 300 700 T 490 700 T 680 700 T 870 700 V 960 H 110 Z" fill="url(#waterDeep)"/>
+    </g>
+    <g stroke="#0c4a6e" stroke-width="16" stroke-linecap="round">
+      <line x1="560" y1="405" x2="628" y2="405"/>
+      <line x1="560" y1="470" x2="604" y2="470"/>
+      <line x1="560" y1="535" x2="628" y2="535"/>
+    </g>
+  </g>
+
+  <g font-family="-apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif" fill="#f0f9ff">
+    <text x="470" y="250" font-size="76" font-weight="700" letter-spacing="-1">Bay Flood Watch</text>
+    <text x="472" y="318" font-size="32" fill="#bae6fd">Live flood conditions for the SF Bay Area</text>
+    <text x="472" y="392" font-size="24" fill="#7dd3fc">NWS alerts · creek gauges · Bay tides · power outages · traffic cams</text>
+  </g>
+</svg>

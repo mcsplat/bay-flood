@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="Bay Flood Watch logo: a raindrop filling with rising water, with gauge marks">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0b2540"/>
+      <stop offset="1" stop-color="#0c4a6e"/>
+    </linearGradient>
+    <linearGradient id="waterTop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#38bdf8"/>
+      <stop offset="1" stop-color="#0ea5e9"/>
+    </linearGradient>
+    <linearGradient id="waterDeep" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0284c7"/>
+      <stop offset="1" stop-color="#075985"/>
+    </linearGradient>
+    <clipPath id="drop">
+      <path d="M512 150 C 512 150 236 470 236 625 A 276 276 0 0 0 788 625 C 788 470 512 150 512 150 Z"/>
+    </clipPath>
+  </defs>
+
+  <!-- Full-bleed background so GitHub's circle crop still looks intentional -->
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+
+  <!-- Raindrop -->
+  <path d="M512 150 C 512 150 236 470 236 625 A 276 276 0 0 0 788 625 C 788 470 512 150 512 150 Z" fill="#f0f9ff"/>
+
+  <!-- Rising water inside the drop -->
+  <g clip-path="url(#drop)">
+    <path d="M150 612 Q 245 562 340 612 T 530 612 T 720 612 T 910 612 V 960 H 150 Z" fill="url(#waterTop)"/>
+    <path d="M110 700 Q 205 655 300 700 T 490 700 T 680 700 T 870 700 V 960 H 110 Z" fill="url(#waterDeep)"/>
+  </g>
+
+  <!-- Staff-gauge marks: the "watch" in flood watch -->
+  <g stroke="#0c4a6e" stroke-width="16" stroke-linecap="round">
+    <line x1="560" y1="405" x2="628" y2="405"/>
+    <line x1="560" y1="470" x2="604" y2="470"/>
+    <line x1="560" y1="535" x2="628" y2="535"/>
+  </g>
+</svg>

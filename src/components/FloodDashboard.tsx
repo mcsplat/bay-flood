@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import Image from "next/image";
 import type { FloodAlert, GaugeSummary, OutageReport, Selection, TideStationReport, TrafficCamera } from "@/types/flood";
 import { CameraDetail } from "@/components/camera/CameraPanel";
 import { OutageDetail, OutageSummary } from "@/components/panel/OutagePanel";
@@ -77,7 +78,7 @@ export function FloodDashboard() {
       >
         <header className="flex items-center justify-between border-b border-border px-4 py-3">
           <div className="flex items-center gap-2">
-            <span className="grid h-7 w-7 place-items-center rounded-lg bg-accent text-sm text-white" aria-hidden>≋</span>
+            <Image src="/brand/avatar.svg" alt="" width={28} height={28} className="h-7 w-7 rounded-lg" priority unoptimized />
             <div>
               <p className="text-sm font-semibold leading-none">Bay Flood Watch</p>
               <p className="mt-0.5 text-[11px] text-muted">
