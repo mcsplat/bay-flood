@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: In danger right now? Call 911
+    url: https://www.ready.gov/floods
+    about: This project can't help with emergencies. Call 911 and follow instructions from local officials.
+  - name: Official Bay Area forecasts and alerts (NWS San Francisco Bay Area)
+    url: https://www.weather.gov/mtr/
+    about: The National Weather Service is the official source for warnings.

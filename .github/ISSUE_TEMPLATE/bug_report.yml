@@ -1,0 +1,44 @@
+name: Bug report
+description: Something is broken, or the app shows wrong or missing information.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! If the app shows **wrong flood data**, the most helpful thing is a link or screenshot of the official source so we can compare.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you see, and what did you expect instead?
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Location or layer
+      description: e.g. "Napa River near Napa gauge", "San Francisco tide station", "outage layer in Oakland"
+  - type: input
+    id: when
+    attributes:
+      label: When did you see it?
+      description: Date and approximate time (Pacific).
+  - type: textarea
+    id: official
+    attributes:
+      label: Official source (for data issues)
+      description: Link or screenshot from NWS, NOAA, USGS, Cal OES/PG&E, or Caltrans showing the correct information.
+  - type: dropdown
+    id: device
+    attributes:
+      label: Device
+      options:
+        - iPhone (Safari or installed app)
+        - Android
+        - Desktop browser
+        - Other
+  - type: textarea
+    id: screenshots
+    attributes:
+      label: Screenshots
+      description: Drag images here if they help.

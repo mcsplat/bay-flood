@@ -1,0 +1,39 @@
+name: Data source request
+description: Suggest a new public data feed (creek gauges, shelters, sandbag stations, road closures…).
+labels: ["data source"]
+body:
+  - type: input
+    id: name
+    attributes:
+      label: Source name and owner
+      description: e.g. "Valley Water ALERT gauges (Santa Clara Valley Water District)"
+    validations:
+      required: true
+  - type: input
+    id: url
+    attributes:
+      label: Link to the data or its documentation
+    validations:
+      required: true
+  - type: textarea
+    id: value
+    attributes:
+      label: Why it helps
+      description: What would people be able to see or decide with this that they can't today?
+    validations:
+      required: true
+  - type: dropdown
+    id: format
+    attributes:
+      label: How is it published?
+      options:
+        - Documented API
+        - ArcGIS feature service
+        - Downloadable file (CSV, GeoJSON, KML)
+        - Web page only (would need scraping)
+        - Not sure
+  - type: textarea
+    id: terms
+    attributes:
+      label: Terms of use and update frequency
+      description: Anything you know about whether the data may be reused, and how often it updates.
