@@ -1,39 +1,26 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
-import Link from "next/link";
-import type { FloodAlert, GaugeSummary, Outlook, OutageReport, Selection, TideStationReport, TrafficCamera } from "@/types/flood";
-import { OutlookCard } from "@/components/outlook/OutlookCard";
-import { InstallHint } from "@/components/pwa/InstallHint";
-import { AppHeader } from "@/components/brand/AppHeader";
-import { CameraDetail } from "@/components/camera/CameraPanel";
-import { OutageDetail, OutageSummary } from "@/components/panel/OutagePanel";
-import { usePolling } from "@/hooks/usePolling";
+import { useCallback, useState, type CSSProperties } from "react";
+import type { Selection } from "@/types/flood";
+import { useFloodData } from "@/hooks/useFloodData";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { formatRelative } from "@/lib/format";
+import { AppHeader } from "@/components/brand/AppHeader";
 import { FloodMap } from "@/components/map/FloodMap";
 import type { LayerKey } from "@/components/map/layers";
 import { LayerToggles } from "@/components/map/LayerToggles";
-import { SummaryCard } from "@/components/panel/SummaryCard";
-import { AlertDetail, AlertList } from "@/components/panel/AlertList";
-import { TideDetail, TideList } from "@/components/panel/TidePanel";
-import { GaugeDetailCard, GaugeList } from "@/components/panel/GaugePanel";
-import { Card, Skeleton } from "@/components/ui/Badge";
+import { PanelBody } from "@/components/panel/PanelBody";
+import { BottomSheet, type Snap } from "@/components/sheet/BottomSheet";
+import { SheetHeader } from "@/components/sheet/SheetHeader";
 
-const MINUTE = 60_000;
-
+/**
+ * Desktop: side panel + map. Phones: full-screen map with a draggable bottom sheet.
+ * The map is always the first child so switching layouts never re-creates it.
+ */
 export function FloodDashboard() {
-  const alertsQ = usePolling<{ alerts: FloodAlert[] }>("/api/alerts", 2 * MINUTE);
-  const tidesQ = usePolling<{ stations: TideStationReport[] }>("/api/tides", 6 * MINUTE);
-  const gaugesQ = usePolling<{ gauges: GaugeSummary[] }>("/api/gauges", 5 * MINUTE);
-  const outagesQ = usePolling<OutageReport>("/api/outages", 5 * MINUTE);
-  const outlookQ = usePolling<Outlook>("/api/outlook", 10 * MINUTE);
-  const outages = outagesQ.data;
-  const camerasQ = usePolling<{ cameras: TrafficCamera[] }>("/api/cameras", 60 * MINUTE);
-  const cameras = useMemo(() => camerasQ.data?.cameras ?? [], [camerasQ.data]);
-
-  const alerts = useMemo(() => alertsQ.data?.alerts ?? [], [alertsQ.data]);
-  const tides = useMemo(() => tidesQ.data?.stations ?? [], [tidesQ.data]);
-  const gauges = useMemo(() => gaugesQ.data?.gauges ?? [], [gaugesQ.data]);
+  const data = useFloodData();
+  const isMobile = useIsMobile();
+  const { gauges, tides, outages, cameras } = data;
 
   const [layers, setLayers] = useState<Record<LayerKey, boolean>>({
     alerts: true,
@@ -45,10 +32,14 @@ export function FloodDashboard() {
   });
   const [selection, setSelection] = useState<Selection | null>(null);
   const [focus, setFocus] = useState<[number, number] | null>(null);
+  const [snap, setSnap] = useState<Snap>("peek");
+  const [sheetH, setSheetH] = useState(0);
 
   const select = useCallback(
     (s: Selection) => {
       setSelection(s);
+      // On phones, open the sheet far enough to show the details.
+      setSnap((current) => (current === "peek" ? "half" : current));
       const point =
         s.type === "gauge"
           ? gauges.find((g) => g.lid === s.id)
@@ -63,87 +54,58 @@ export function FloodDashboard() {
     },
     [gauges, tides, outages, cameras],
   );
-  const back = () => setSelection(null);
 
-  const loading = !alertsQ.data && !tidesQ.data && !gaugesQ.data;
-  const errors = [alertsQ.error, tidesQ.error, gaugesQ.error, outagesQ.error, camerasQ.error].filter(Boolean);
-  const offline = [alertsQ, tidesQ, gaugesQ, outagesQ, outlookQ].some((q) => q.offline);
-  const updated = Math.max(alertsQ.updatedAt ?? 0, tidesQ.updatedAt ?? 0, gaugesQ.updatedAt ?? 0);
+  const status = data.offline
+    ? "Showing saved data"
+    : data.updatedAt
+      ? `Updated ${formatRelative(new Date(data.updatedAt).toISOString())}`
+      : "Loading live data…";
+  const bottomInset = isMobile ? sheetH : 0;
 
-  const selectedAlert = selection?.type === "alert" ? alerts.find((a) => a.id === selection.id) : undefined;
-  const selectedTide = selection?.type === "tide" ? tides.find((t) => t.id === selection.id) : undefined;
-  const selectedGauge = selection?.type === "gauge" ? gauges.find((g) => g.lid === selection.id) : undefined;
-  const selectedOutage = selection?.type === "outage" ? outages?.outages.find((o) => o.id === selection.id) : undefined;
-  const selectedCamera = selection?.type === "camera" ? cameras.find((c) => c.id === selection.id) : undefined;
+  const body = (
+    <PanelBody data={data} selection={selection} onSelect={select} onBack={() => setSelection(null)} onFocus={setFocus} />
+  );
 
   return (
-    <div className="flex h-dvh flex-col pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] md:flex-row">
-      <aside
-        className="order-2 flex min-h-0 flex-1 flex-col border-border bg-background md:order-1 md:w-[400px] md:flex-none md:border-r md:pt-[env(safe-area-inset-top)]"
-        aria-label="Flood conditions"
-      >
-        <AppHeader
-          offline={offline}
-          status={
-            offline
-              ? "Showing saved data"
-              : updated
-                ? `Updated ${formatRelative(new Date(updated).toISOString())}`
-                : "Loading live data…"
-          }
+    <div
+      className="group relative h-dvh overflow-hidden pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)] md:flex md:flex-row"
+      data-sheet={isMobile ? snap : undefined}
+      style={{ "--sheet-h": `${bottomInset}px` } as CSSProperties}
+    >
+      <main className="absolute inset-0 md:relative md:order-2 md:flex-1">
+        <FloodMap
+          alerts={data.alerts}
+          gauges={gauges}
+          tides={tides}
+          outages={outages}
+          cameras={cameras}
+          layers={layers}
+          selection={selection}
+          focus={focus}
+          onSelect={select}
+          bottomInset={bottomInset}
         />
-
-        <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
-          <InstallHint />
-          {offline && (
-            <p role="status" className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs">
-              <span className="font-semibold">You&apos;re offline.</span> Showing the last data this device received; it
-              may be out of date.
-            </p>
-          )}
-          {errors.length > 0 && (
-            <p role="status" className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-600 dark:text-red-400">
-              {errors.join(" · ")}. Showing the latest data we have.
-            </p>
-          )}
-          {loading ? (
-            <Card className="space-y-3">
-              <Skeleton className="h-5 w-2/3" />
-              <Skeleton className="h-24 w-full" />
-              <Skeleton className="h-16 w-full" />
-            </Card>
-          ) : selectedAlert ? (
-            <AlertDetail alert={selectedAlert} onBack={back} />
-          ) : selectedTide ? (
-            <TideDetail station={selectedTide} onBack={back} />
-          ) : selectedGauge ? (
-            <GaugeDetailCard summary={selectedGauge} onBack={back} cameras={cameras} onSelect={select} />
-          ) : selectedOutage ? (
-            <OutageDetail outage={selectedOutage} onBack={back} />
-          ) : selectedCamera ? (
-            <CameraDetail camera={selectedCamera} onBack={back} />
-          ) : (
-            <>
-              <SummaryCard alerts={alerts} gauges={gauges} tides={tides} />
-              <OutlookCard outlook={outlookQ.data} error={outlookQ.error} onFocus={setFocus} />
-              <AlertList alerts={alerts} onSelect={select} />
-              <TideList tides={tides} onSelect={select} />
-              <GaugeList gauges={gauges} onSelect={select} />
-              {outages && <OutageSummary report={outages} onSelect={select} />}
-            </>
-          )}
-          <p className="px-1 pb-2 text-[11px] leading-snug text-muted">
-            Not an official warning service. Follow evacuation orders from local officials and call 911 in an emergency.{" "}
-            <Link href="/about" className="underline">About this app</Link>.
-            Data: NWS, NOAA CO-OPS, NOAA NWPS/USGS, Cal OES, Caltrans.
-          </p>
-        </div>
-      </aside>
-
-      <main className="relative order-1 h-[45dvh] md:order-2 md:h-auto md:flex-1">
-        <FloodMap alerts={alerts} gauges={gauges} tides={tides} outages={outages} cameras={cameras} layers={layers} selection={selection} focus={focus} onSelect={select} />
         <LayerToggles layers={layers} onChange={setLayers} />
       </main>
+
+      {isMobile ? (
+        <BottomSheet
+          snap={snap}
+          onSnapChange={setSnap}
+          onHeightChange={setSheetH}
+          header={<SheetHeader alerts={data.alerts} outlook={data.outlook} status={status} offline={data.offline} />}
+        >
+          {body}
+        </BottomSheet>
+      ) : (
+        <aside
+          className="flex min-h-0 flex-col border-r border-border bg-background md:order-1 md:w-[400px] md:flex-none md:pt-[env(safe-area-inset-top)]"
+          aria-label="Flood conditions"
+        >
+          <AppHeader offline={data.offline} status={status} />
+          <div className="min-h-0 flex-1 overflow-y-auto">{body}</div>
+        </aside>
+      )}
     </div>
   );
 }

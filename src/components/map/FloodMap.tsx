@@ -2,35 +2,19 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { GeoJSONSource, Map as MlMap, MapMouseEvent } from "maplibre-gl";
-import type {
-  FloodAlert,
-  GaugeSummary,
-  OutageReport,
-  PowerOutage,
-  Selection,
-  TideStationReport,
-  TrafficCamera,
-} from "@/types/flood";
+import type { FloodAlert, GaugeSummary, OutageReport, PowerOutage,
+  Selection, TideStationReport, TrafficCamera } from "@/types/flood";
 import { rank } from "@/lib/categories";
 import { gaugePopupHtml } from "./gaugePopup";
 import { outagePopupHtml } from "./outagePopup";
 import { cameraPopupHtml, clusterPopupHtml } from "./cameraPopup";
 import { wireInteractions } from "./interactions";
-import { useRiskPulse, useTideMarkers } from "./mapEffects";
+import { useMapPadding, useRiskPulse, useTideMarkers } from "./mapEffects";
 import { addRadarLayers, useRadar } from "./radar";
 import { RadarControl } from "./RadarControl";
 import { LocateButton, useLocate } from "./LocateButton";
-import {
-  BASEMAP,
-  BAY_CENTER,
-  LAYER_IDS,
-  OVERLAY_LAYERS,
-  alertsGeoJson,
-  camerasGeoJson,
-  gaugesGeoJson,
-  outagesGeoJson,
-  type LayerKey,
-} from "./layers";
+import { BASEMAP, BAY_CENTER, LAYER_IDS, OVERLAY_LAYERS, alertsGeoJson,
+  camerasGeoJson, gaugesGeoJson, outagesGeoJson, type LayerKey } from "./layers";
 
 interface Props {
   alerts: FloodAlert[];
@@ -42,11 +26,13 @@ interface Props {
   selection: Selection | null;
   focus: [number, number] | null;
   onSelect: (s: Selection) => void;
+  /** Pixels covered by the phone bottom sheet */
+  bottomInset?: number;
 }
 
 const EMPTY = { type: "FeatureCollection", features: [] } as GeoJSON.FeatureCollection;
 
-export function FloodMap({ alerts, gauges, tides, outages, cameras, layers, selection, focus, onSelect }: Props) {
+export function FloodMap({ alerts, gauges, tides, outages, cameras, layers, selection, focus, onSelect, bottomInset = 0 }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MlMap | null>(null);
   const mlRef = useRef<typeof import("maplibre-gl") | null>(null);
@@ -171,6 +157,7 @@ export function FloodMap({ alerts, gauges, tides, outages, cameras, layers, sele
   useTideMarkers(map, mlRef, ready, tides, layers.tides, selectRef);
   const radar = useRadar(map, ready, layers.radar);
   const located = useLocate(map, mlRef, ready);
+  useMapPadding(map, ready, bottomInset);
 
   useEffect(() => {
     const m = map.current;

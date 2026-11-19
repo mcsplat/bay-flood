@@ -98,3 +98,15 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .user-location-dot::after { animation: none; opacity: 0.6; }
 }
+
+/* Phones: the map fills the screen under the bottom sheet. Pinch to zoom replaces the
+   +/− buttons, and the map credits sit just above the sheet instead of under it. */
+@media (max-width: 767px) {
+  .maplibregl-ctrl-top-right .maplibregl-ctrl-group {
+    display: none;
+  }
+  .maplibregl-ctrl-bottom-right {
+    bottom: var(--sheet-h, 0px);
+    transition: bottom 300ms ease-out;
+  }
+}

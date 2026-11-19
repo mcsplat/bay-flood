@@ -62,3 +62,12 @@ export function useTideMarkers(
     });
   }, [map, ml, ready, tides, visible, onSelect]);
 }
+
+/** Tell MapLibre how much of the map the bottom sheet covers, so centering and flyTo use the visible area. */
+export function useMapPadding(map: RefObject<MlMap | null>, ready: boolean, bottom: number) {
+  useEffect(() => {
+    const m = map.current;
+    if (!ready || !m) return;
+    m.easeTo({ padding: { top: 0, right: 0, left: 0, bottom }, duration: 250 });
+  }, [map, ready, bottom]);
+}
