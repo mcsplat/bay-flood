@@ -110,3 +110,50 @@ body {
     transition: bottom 300ms ease-out;
   }
 }
+
+/* Phone tap labels: one tap on a marker shows this; tapping it opens the details. */
+.tap-popup .maplibregl-popup-content {
+  padding: 0;
+  overflow: hidden;
+}
+.tap-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.tap-label-swatch {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  box-shadow: 0 0 0 2px var(--surface), 0 0 0 3px var(--border);
+}
+.tap-label-text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+.tap-label-title {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.tap-label-detail {
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--muted);
+}
+.tap-label-action {
+  flex: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+}

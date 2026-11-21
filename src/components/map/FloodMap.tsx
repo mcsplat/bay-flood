@@ -1,14 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { GeoJSONSource, Map as MlMap, MapMouseEvent } from "maplibre-gl";
+import type { GeoJSONSource, Map as MlMap } from "maplibre-gl";
 import type { FloodAlert, GaugeSummary, OutageReport, PowerOutage,
   Selection, TideStationReport, TrafficCamera } from "@/types/flood";
 import { rank } from "@/lib/categories";
-import { gaugePopupHtml } from "./gaugePopup";
-import { outagePopupHtml } from "./outagePopup";
-import { cameraPopupHtml, clusterPopupHtml } from "./cameraPopup";
 import { wireInteractions } from "./interactions";
+import { mapTargets } from "./mapTargets";
+import { addMapIcons } from "./mapIcons";
 import { useMapPadding, useRiskPulse, useTideMarkers } from "./mapEffects";
 import { addRadarLayers, useRadar } from "./radar";
 import { RadarControl } from "./RadarControl";
@@ -40,6 +39,7 @@ export function FloodMap({ alerts, gauges, tides, outages, cameras, layers, sele
   const gaugeIndex = useRef(new Map<string, GaugeSummary>());
   const outageIndex = useRef(new Map<string, PowerOutage>());
   const cameraIndex = useRef(new Map<string, TrafficCamera>());
+  const alertIndex = useRef(new Map<string, FloodAlert>());
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -70,57 +70,22 @@ export function FloodMap({ alerts, gauges, tides, outages, cameras, layers, sele
         }
         // ~800 cameras: cluster until street-level zoom.
         m.addSource("cameras", { type: "geojson", data: EMPTY, cluster: true, clusterMaxZoom: 11, clusterRadius: 45 });
+        addMapIcons(m);
         for (const layer of OVERLAY_LAYERS) m.addLayer(layer as never);
         addRadarLayers(m, "alerts-fill");
         // Keep credits collapsed behind the ⓘ button so they don't cover controls on phones.
         m.getContainer().querySelector(".maplibregl-ctrl-attrib")?.classList.remove("maplibregl-compact-show");
 
         const popup = new ml.Popup({ closeButton: false, offset: 14, maxWidth: "280px" });
-        const point = (id: string, index: Map<string, { lat: number; lon: number }>, html: (x: never) => string) => {
-          const item = index.get(id);
-          return item ? { html: html(item as never), lngLat: [item.lon, item.lat] as [number, number] } : null;
-        };
-        wireInteractions(
-          m,
-          popup,
-          [
-            {
-              layers: ["gauges-circle", "gauges-risk-ring"],
-              describe: (id) => point(id, gaugeIndex.current, gaugePopupHtml),
-              select: (id) => ({ type: "gauge", id }),
-            },
-            {
-              layers: ["outages-circle", "outage-areas-fill"],
-              describe: (id) => point(id, outageIndex.current, outagePopupHtml),
-              select: (id) => ({ type: "outage", id }),
-            },
-            {
-              layers: ["cameras-point"],
-              describe: (id) => point(id, cameraIndex.current, cameraPopupHtml),
-              select: (id) => ({ type: "camera", id }),
-            },
-            {
-              layers: ["cameras-cluster"],
-              idKey: "cluster_id",
-              describe: (_id, p, at) => ({ html: clusterPopupHtml(Number(p.point_count)), lngLat: at }),
-              select: (id, _p, at) => {
-                (m.getSource("cameras") as GeoJSONSource)
-                  .getClusterExpansionZoom(Number(id))
-                  .then((zoom) => m.easeTo({ center: at, zoom: zoom + 0.5 }));
-                return null;
-              },
-            },
-          ],
-          (s) => selectRef.current(s),
-          (e: MapMouseEvent) => {
-            const hits = m.queryRenderedFeatures(e.point, { layers: ["alerts-fill"] });
-            const top = hits.sort((a, b) => b.properties.rank - a.properties.rank)[0];
-            if (top) selectRef.current({ type: "alert", id: top.properties.id });
-          },
-        );
+        // Always above the marker; interactions.ts slides the card back on screen near the edges.
+        const tapPopup = new ml.Popup({ closeButton: false, closeOnClick: false, anchor: "bottom", offset: 14, maxWidth: "min(300px, calc(100vw - 24px))", className: "tap-popup" });
+        const indexes = { gauges: gaugeIndex, outages: outageIndex, cameras: cameraIndex, alerts: alertIndex };
+        wireInteractions(m, popup, tapPopup, mapTargets(m, indexes), (s) => selectRef.current(s));
         setReady(true);
       });
       map.current = m;
+      // Dev only: lets the scripted browser tests find markers on screen.
+      if (process.env.NODE_ENV === "development") (window as unknown as { __bfwMap?: MlMap }).__bfwMap = m;
     })();
     return () => {
       cancelled = true;
@@ -133,6 +98,7 @@ export function FloodMap({ alerts, gauges, tides, outages, cameras, layers, sele
     (map.current?.getSource(source) as GeoJSONSource | undefined)?.setData(data);
 
   useEffect(() => {
+    alertIndex.current = new Map(alerts.map((a) => [a.id, a]));
     if (ready) setData("alerts", alertsGeoJson(alerts));
   }, [ready, alerts]);
 

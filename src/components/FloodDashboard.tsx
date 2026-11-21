@@ -4,10 +4,10 @@ import { useCallback, useState, type CSSProperties } from "react";
 import type { Selection } from "@/types/flood";
 import { useFloodData } from "@/hooks/useFloodData";
 import { useIsMobile } from "@/hooks/useIsMobile";
+import { useLayers } from "@/hooks/useLayers";
 import { formatRelative } from "@/lib/format";
 import { AppHeader } from "@/components/brand/AppHeader";
 import { FloodMap } from "@/components/map/FloodMap";
-import type { LayerKey } from "@/components/map/layers";
 import { LayerToggles } from "@/components/map/LayerToggles";
 import { PanelBody } from "@/components/panel/PanelBody";
 import { BottomSheet, type Snap } from "@/components/sheet/BottomSheet";
@@ -22,14 +22,7 @@ export function FloodDashboard() {
   const isMobile = useIsMobile();
   const { gauges, tides, outages, cameras } = data;
 
-  const [layers, setLayers] = useState<Record<LayerKey, boolean>>({
-    alerts: true,
-    gauges: true,
-    tides: true,
-    outages: true,
-    cameras: true,
-    radar: true,
-  });
+  const [layers, setLayers] = useLayers();
   const [selection, setSelection] = useState<Selection | null>(null);
   const [focus, setFocus] = useState<[number, number] | null>(null);
   const [snap, setSnap] = useState<Snap>("peek");

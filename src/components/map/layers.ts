@@ -12,6 +12,8 @@ export const BASEMAP = {
 export type LayerKey = "alerts" | "gauges" | "tides" | "outages" | "cameras" | "radar";
 
 export const CAMERA_COLOR = "#334155";
+/** Cameras appear at neighborhood zoom; the regional view is about water. */
+export const CAMERA_MIN_ZOOM = 10;
 
 export function camerasGeoJson(cameras: TrafficCamera[]): FeatureCollection {
   return {
@@ -90,42 +92,35 @@ export const OVERLAY_LAYERS = [
     paint: { "line-color": ["get", "color"], "line-width": 1.5, "line-opacity": 0.85 },
   },
   // Cameras sit below outages and gauges: useful context, never the headline.
+  // Square camera icons (never round, so they can't be mistaken for gauges), hidden
+  // until neighborhood zoom where a camera is actually worth opening.
   {
     id: "cameras-cluster",
-    type: "circle",
-    source: "cameras",
-    filter: ["has", "point_count"],
-    paint: {
-      "circle-color": CAMERA_COLOR,
-      "circle-opacity": 0.85,
-      "circle-radius": ["step", ["get", "point_count"], 11, 10, 14, 50, 18],
-      "circle-stroke-color": "#ffffff",
-      "circle-stroke-width": 1.5,
-    },
-  },
-  {
-    id: "cameras-cluster-count",
     type: "symbol",
     source: "cameras",
+    minzoom: CAMERA_MIN_ZOOM,
     filter: ["has", "point_count"],
     layout: {
+      "icon-image": "camera-cluster",
+      "icon-allow-overlap": true,
       "text-field": ["get", "point_count_abbreviated"],
       "text-font": ["Open Sans Bold"],
-      "text-size": 11,
+      "text-size": 10,
+      "text-anchor": "left",
+      "text-offset": [0.9, -1.1],
       "text-allow-overlap": true,
     },
-    paint: { "text-color": "#ffffff" },
+    paint: { "text-color": "#ffffff", "text-halo-color": CAMERA_COLOR, "text-halo-width": 3 },
   },
   {
     id: "cameras-point",
-    type: "circle",
+    type: "symbol",
     source: "cameras",
+    minzoom: CAMERA_MIN_ZOOM,
     filter: ["!", ["has", "point_count"]],
-    paint: {
-      "circle-color": CAMERA_COLOR,
-      "circle-radius": 5,
-      "circle-stroke-color": ["case", ["==", ["get", "video"], 1], "#38bdf8", "#ffffff"],
-      "circle-stroke-width": 2,
+    layout: {
+      "icon-image": ["case", ["==", ["get", "video"], 1], "camera-video", "camera"],
+      "icon-allow-overlap": true,
     },
   },
   {
@@ -141,17 +136,15 @@ export const OVERLAY_LAYERS = [
     paint: { "line-color": OUTAGE_COLOR, "line-width": 1, "line-opacity": 0.6 },
   },
   {
-    id: "outages-circle",
-    type: "circle",
+    id: "outages-point",
+    type: "symbol",
     source: "outages",
-    layout: { "circle-sort-key": ["get", "customers"] },
-    paint: {
-      "circle-color": OUTAGE_COLOR,
-      // Area-proportional sizing: 1 customer ≈ 3px, 100 ≈ 8px, 2,000+ ≈ 16px
-      "circle-radius": ["interpolate", ["linear"], ["sqrt", ["get", "customers"]], 1, 3, 10, 8, 45, 16],
-      "circle-opacity": 0.8,
-      "circle-stroke-color": "#ffffff",
-      "circle-stroke-width": 1,
+    layout: {
+      "icon-image": "outage",
+      // Area-proportional sizing, big enough to read the bolt: 1 customer ≈ 17px, 100 ≈ 20px, 2,000+ ≈ 28px
+      "icon-size": ["interpolate", ["linear"], ["sqrt", ["get", "customers"]], 1, 0.7, 10, 0.85, 45, 1.15],
+      "icon-allow-overlap": true,
+      "symbol-sort-key": ["get", "customers"],
     },
   },
   // At-risk gauges (action stage or worse) get a pulsing halo plus a steady ring,
@@ -188,10 +181,19 @@ export const OVERLAY_LAYERS = [
     layout: { "circle-sort-key": ["get", "rank"] },
     paint: {
       "circle-color": ["get", "color"],
-      "circle-radius": ["interpolate", ["linear"], ["get", "rank"], -1, 3.5, 0, 4.5, 1, 7, 4, 9],
-      "circle-opacity": ["case", ["<", ["get", "rank"], 0], 0.55, 0.95],
+      // Zoomed out, normal gauges shrink to faint specks so elevated ones stand out.
+      "circle-radius": [
+        "interpolate", ["linear"], ["zoom"],
+        8, ["interpolate", ["linear"], ["get", "rank"], -1, 2, 0, 2.5, 1, 7, 4, 9],
+        11, ["interpolate", ["linear"], ["get", "rank"], -1, 4, 0, 5.5, 1, 8, 4, 10],
+      ],
+      "circle-opacity": [
+        "interpolate", ["linear"], ["zoom"],
+        8, ["case", ["<", ["get", "rank"], 0], 0.35, ["<", ["get", "rank"], 1], 0.6, 0.95],
+        11, ["case", ["<", ["get", "rank"], 0], 0.6, 0.95],
+      ],
       "circle-stroke-color": "#ffffff",
-      "circle-stroke-width": ["case", ["<", ["get", "rank"], 1], 0.75, 1.5],
+      "circle-stroke-width": ["interpolate", ["linear"], ["zoom"], 8, ["case", ["<", ["get", "rank"], 1], 0.5, 1.5], 11, 1.5],
     },
   },
   {
@@ -212,7 +214,7 @@ export const LAYER_IDS: Record<LayerKey, string[]> = {
   alerts: ["alerts-fill", "alerts-line"],
   gauges: ["gauges-risk-pulse", "gauges-risk-ring", "gauges-circle", "gauges-selected"],
   tides: [],
-  outages: ["outage-areas-fill", "outage-areas-line", "outages-circle"],
-  cameras: ["cameras-cluster", "cameras-cluster-count", "cameras-point"],
+  outages: ["outage-areas-fill", "outage-areas-line", "outages-point"],
+  cameras: ["cameras-cluster", "cameras-point"],
   radar: [], // managed by useRadar (frames swap by opacity)
 };
