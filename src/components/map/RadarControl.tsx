@@ -2,13 +2,14 @@
 
 import { useState } from "react";
 import { RADAR_FRAMES, type RadarState } from "./radar";
+import { RADAR_GRADIENT } from "./layerLegend";
 import { useIsMobile } from "@/hooks/useIsMobile";
 
 const TZ = "America/Los_Angeles";
 const timeFmt = new Intl.DateTimeFormat("en-US", { timeZone: TZ, hour: "numeric", minute: "2-digit" });
 
 /** NWS reflectivity palette, light drizzle → intense rain/hail. */
-const LEGEND = "linear-gradient(90deg, #04e9e7, #019ff4, #0300f4, #02fd02, #01c501, #008e00, #fdf802, #e5bc00, #fd9500, #fd0000, #d40000, #bc0000, #f800fd)";
+const LEGEND = RADAR_GRADIENT;
 
 /** Phones: sits just above the bottom sheet. Desktop: above the map credits. */
 // Hidden while the phone sheet is fully open: there is no map left to sit on.
