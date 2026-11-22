@@ -50,5 +50,6 @@ export function alertLabel(a: FloodAlert): string {
 export function closureLabel(c: RoadClosure): string {
   const color = c.stormRelated ? CLOSURE_STORM_FILL : CLOSURE_FILL;
   const reason = c.stormRelated ? `<span style="color:${color};font-weight:600">${esc(c.reason)}</span>` : esc(c.reason);
-  return label(color, "diamond", closureHeadline(c), `${reason} · ${esc(closureExtent(c))}`, "Details");
+  const source = c.source === "chp" ? " · CHP report" : "";
+  return label(color, "diamond", closureHeadline(c), `${reason}${source} · ${esc(closureExtent(c))}`, "Details");
 }

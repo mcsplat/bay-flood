@@ -1,6 +1,7 @@
 import { cacheLife } from "next/cache";
 import type { RoadClosure } from "@/types/flood";
 import { getJson, settled } from "./http";
+import { floodReportsFrom511, type Open511Event } from "./chp511";
 
 /**
  * Caltrans Lane Closure System (CWWP2). District 4 is the Bay Area; District 5 adds
@@ -69,6 +70,7 @@ function toClosure({ lcs }: LcsRecord): RoadClosure | null {
 
   return {
     id: lcs.index,
+    source: "caltrans",
     route: begin.beginRoute,
     direction: lcs.location.travelFlowDirection,
     from: begin.beginLocationName.trim(),
@@ -79,6 +81,7 @@ function toClosure({ lcs }: LcsRecord): RoadClosure | null {
     closureType: c.typeOfClosure,
     lanesClosed: c.lanesClosed,
     totalLanes: c.totalExistingLanes,
+    lanesNote: null,
     reason: c.typeOfWork,
     stormRelated: STORM_WORK.test(c.typeOfWork),
     facility: c.facility,
@@ -93,16 +96,39 @@ function toClosure({ lcs }: LcsRecord): RoadClosure | null {
   };
 }
 
-export async function getRoadClosures(): Promise<RoadClosure[]> {
+/**
+ * CHP flood reports from 511 SF Bay. Cached for 5 minutes (about 12 calls an hour against
+ * the key's ~60/hour limit). Without a key, or if 511 is down, this layer just has none.
+ */
+async function getChpFloodReports(): Promise<RoadClosure[]> {
+  "use cache";
+  cacheLife({ stale: 120, revalidate: 300, expire: 3600 });
+
+  const key = process.env.API_511_KEY;
+  if (!key) return [];
+  try {
+    const url = `https://api.511.org/traffic/events?format=json&status=ACTIVE&api_key=${encodeURIComponent(key)}`;
+    return floodReportsFrom511(await getJson<{ events?: Open511Event[] }>(url, { timeoutMs: 20_000 }));
+  } catch (err) {
+    // Never log the URL: it carries the key.
+    console.error("511 events unavailable:", err instanceof Error ? err.message.replace(key, "…") : "error");
+    return [];
+  }
+}
+
+async function getCaltransClosures(): Promise<RoadClosure[]> {
   "use cache";
   cacheLife({ stale: 120, revalidate: 300, expire: 3600 });
 
   const feeds = await settled(FEEDS.map((url) => getJson<{ data: LcsRecord[] }>(url, { timeoutMs: 30_000 })));
   if (!feeds.length) throw new Error("Caltrans lane closure feeds unavailable");
+  return feeds.flatMap(({ data }) => data.map(toClosure)).filter((c): c is RoadClosure => c != null);
+}
 
-  return feeds
-    .flatMap(({ data }) => data.map(toClosure))
-    .filter((c): c is RoadClosure => c != null)
-    // Storm-related first, then full closures.
-    .sort((a, b) => Number(b.stormRelated) - Number(a.stormRelated) || Number(b.full) - Number(a.full));
+/** Caltrans closures in effect plus CHP flood reports. Storm-related first, then full closures. */
+export async function getRoadClosures(): Promise<RoadClosure[]> {
+  const [caltrans, chp] = await Promise.all([getCaltransClosures(), getChpFloodReports()]);
+  return [...chp, ...caltrans].sort(
+    (a, b) => Number(b.stormRelated) - Number(a.stormRelated) || Number(b.full) - Number(a.full),
+  );
 }

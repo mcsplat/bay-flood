@@ -28,7 +28,7 @@ export function ClosureSummary({ closures, onSelect }: { closures: RoadClosure[]
             · {closures.length} closures in effect
           </>
         ) : (
-          <>No closures from flooding or storms right now · {closures.length} roadwork closures in effect</>
+          <>No flooding or storm closures reported right now · {closures.length} roadwork closures in effect</>
         )}
       </p>
       {shown.length > 0 && (
@@ -55,7 +55,8 @@ export function ClosureSummary({ closures, onSelect }: { closures: RoadClosure[]
         </ul>
       )}
       <p className="mt-2 text-[11px] text-muted">
-        Source: Caltrans lane closures, state highways and bridges only. City and county roads aren&apos;t included.
+        Sources: Caltrans lane closures and CHP flood reports via 511.org. State highways and bridges only; city and
+        county roads aren&apos;t included.
       </p>
     </Card>
   );
@@ -65,8 +66,8 @@ export function ClosureDetail({ closure: c, onBack }: { closure: RoadClosure; on
   const rows: [string, string][] = [
     ["Lanes", closureLanes(c)],
     ["Reason", c.reason],
-    ["Where", [c.facility, c.nearby, c.county].filter(Boolean).join(" · ")],
-    ["In place since", c.started ? `${formatTime(c.started)} (${formatRelative(c.started)})` : "—"],
+    ["Where", [c.facility, c.nearby, c.county].filter(Boolean).join(" · ") || "—"],
+    [c.source === "chp" ? "Reported" : "In place since", c.started ? `${formatTime(c.started)} (${formatRelative(c.started)})` : "—"],
     ["Expected to reopen", closureEnds(c)],
   ];
   if (c.delayMinutes) rows.push(["Expected delay", `About ${c.delayMinutes} min`]);
@@ -95,7 +96,10 @@ export function ClosureDetail({ closure: c, onBack }: { closure: RoadClosure; on
         ))}
       </dl>
       <p className="text-[11px] leading-snug text-muted">
-        From the Caltrans lane closure system. Check{" "}
+        {c.source === "chp"
+          ? "Reported by the California Highway Patrol through 511.org. Conditions change fast and the report may lag what's on the road."
+          : "From the Caltrans lane closure system."}{" "}
+        Check{" "}
         <a href="https://quickmap.dot.ca.gov/" target="_blank" rel="noreferrer" className="underline">
           Caltrans QuickMap
         </a>{" "}

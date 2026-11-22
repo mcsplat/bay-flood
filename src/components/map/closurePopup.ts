@@ -22,5 +22,6 @@ export function closurePopupHtml(c: RoadClosure): string {
     ${row("Reason", reason)}
     ${row("Expected to reopen", esc(closureEnds(c)))}
     ${c.delayMinutes ? row("Delay", `about ${c.delayMinutes} min`) : ""}
+    ${c.source === "chp" ? `<div style="font-size:11px;color:var(--muted);margin-top:4px">Reported by CHP via 511</div>` : ""}
   </div>`;
 }

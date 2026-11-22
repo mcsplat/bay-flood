@@ -81,7 +81,7 @@ export function PanelBody({ data, selection, onSelect, onBack, onFocus }: Props)
       <p className="px-1 pb-2 text-[11px] leading-snug text-muted">
         Not an official warning service. Follow evacuation orders from local officials and call 911 in an emergency.{" "}
         <Link href="/about" className="underline">About this app</Link>. Data: NWS, NOAA CO-OPS, NOAA NWPS/USGS, Cal OES,
-        Caltrans.
+        Caltrans, 511.org.
       </p>
     </div>
   );

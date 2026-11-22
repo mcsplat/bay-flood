@@ -178,6 +178,8 @@ export interface TrafficCamera {
 /** A Caltrans highway closure that is in effect now. */
 export interface RoadClosure {
   id: string;
+  /** Caltrans lane closure, or a CHP incident report via 511 */
+  source: "caltrans" | "chp";
   route: string;
   /** "North", "East / West", … */
   direction: string;
@@ -191,6 +193,8 @@ export interface RoadClosure {
   closureType: string;
   lanesClosed: string;
   totalLanes: string;
+  /** Free-text lane info when the source gives no counts, e.g. "Right shoulder affected" */
+  lanesNote: string | null;
   /** Caltrans "type of work", e.g. "Flooding", "Bridge Repair" */
   reason: string;
   /** Caused by flooding, washouts, slides or storm damage */

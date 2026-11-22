@@ -12,7 +12,7 @@ export const LAYER_INFO: { key: LayerKey; label: string; description: string }[]
   { key: "alerts", label: "NWS alerts", description: "Flood warnings, watches and advisories" },
   { key: "gauges", label: "Creek gauges", description: "Creek and river water levels" },
   { key: "tides", label: "Bay tides", description: "Water level and storm surge" },
-  { key: "closures", label: "Road closures", description: "Caltrans highway and bridge closures in effect" },
+  { key: "closures", label: "Road closures", description: "Highway closures and CHP flood reports" },
   { key: "outages", label: "Power outages", description: "PG&E and other utilities, via Cal OES" },
   { key: "cameras", label: "Traffic cams", description: "Caltrans road cameras" },
   { key: "radar", label: "Radar", description: "Rain over the last 50 minutes" },
