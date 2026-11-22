@@ -157,3 +157,50 @@ body {
   font-weight: 600;
   color: var(--accent);
 }
+
+/* Tide station labels. Compact on phones when zoomed out: dot, wave and level only. */
+.tide-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  border-radius: 9999px;
+  border: 1px solid rgb(255 255 255 / 0.7);
+  background: rgb(15 23 42 / 0.85);
+  padding: 2px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #fff;
+  white-space: nowrap;
+  box-shadow: 0 6px 16px rgb(0 0 0 / 0.25);
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+}
+.tide-pill:hover {
+  background: rgb(15 23 42);
+}
+.tide-dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 9999px;
+}
+.tide-surge {
+  font-weight: 400;
+  opacity: 0.75;
+}
+.tide-wave {
+  display: none;
+}
+.tide-pill.is-compact {
+  gap: 3px;
+  padding: 2px 6px;
+}
+.tide-pill.is-compact .tide-name,
+.tide-pill.is-compact .tide-surge {
+  display: none;
+}
+.tide-pill.is-compact .tide-wave {
+  display: block;
+  color: #7dd3fc;
+}

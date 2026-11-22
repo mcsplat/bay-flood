@@ -20,7 +20,7 @@ import { SheetHeader } from "@/components/sheet/SheetHeader";
 export function FloodDashboard() {
   const data = useFloodData();
   const isMobile = useIsMobile();
-  const { gauges, tides, outages, cameras } = data;
+  const { gauges, tides, outages, cameras, closures } = data;
 
   const [layers, setLayers] = useLayers();
   const [selection, setSelection] = useState<Selection | null>(null);
@@ -42,10 +42,12 @@ export function FloodDashboard() {
               ? outages?.outages.find((o) => o.id === s.id)
               : s.type === "camera"
                 ? cameras.find((c) => c.id === s.id)
-                : null;
+                : s.type === "closure"
+                  ? closures.find((c) => c.id === s.id)
+                  : null;
       if (point) setFocus([point.lon, point.lat]);
     },
-    [gauges, tides, outages, cameras],
+    [gauges, tides, outages, cameras, closures],
   );
 
   const status = data.offline
@@ -72,6 +74,7 @@ export function FloodDashboard() {
           tides={tides}
           outages={outages}
           cameras={cameras}
+          closures={closures}
           layers={layers}
           selection={selection}
           focus={focus}

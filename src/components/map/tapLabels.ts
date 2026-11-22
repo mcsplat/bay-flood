@@ -1,4 +1,6 @@
-import type { FloodAlert, GaugeSummary, PowerOutage, TrafficCamera } from "@/types/flood";
+import type { FloodAlert, GaugeSummary, PowerOutage, RoadClosure, TrafficCamera } from "@/types/flood";
+import { closureExtent, closureHeadline } from "@/lib/closures";
+import { CLOSURE_FILL, CLOSURE_STORM_FILL } from "./mapIcons";
 import { ALERT_COLOR, CATEGORY_COLOR, CATEGORY_LABEL } from "@/lib/categories";
 import { formatTime, trendLabel } from "@/lib/format";
 import { CAMERA_COLOR, OUTAGE_COLOR } from "./layers";
@@ -9,10 +11,11 @@ import { CAMERA_COLOR, OUTAGE_COLOR } from "./layers";
  */
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
-function label(swatch: string, shape: "dot" | "square", title: string, detail: string, action: string): string {
+function label(swatch: string, shape: "dot" | "square" | "diamond", title: string, detail: string, action: string): string {
   const radius = shape === "dot" ? "999px" : "3px";
+  const turn = shape === "diamond" ? ";transform:rotate(45deg) scale(.85)" : "";
   return `<button type="button" class="tap-label">
-    <span class="tap-label-swatch" style="background:${swatch};border-radius:${radius}" aria-hidden="true"></span>
+    <span class="tap-label-swatch" style="background:${swatch};border-radius:${radius}${turn}" aria-hidden="true"></span>
     <span class="tap-label-text">
       <span class="tap-label-title">${esc(title)}</span>
       <span class="tap-label-detail">${detail}</span>
@@ -42,4 +45,10 @@ export function outageLabel(o: PowerOutage): string {
 export function alertLabel(a: FloodAlert): string {
   const area = a.areaDesc.length > 70 ? `${a.areaDesc.slice(0, 67).trimEnd()}…` : a.areaDesc;
   return label(ALERT_COLOR[a.kind], "square", a.event, esc(area), "Details");
+}
+
+export function closureLabel(c: RoadClosure): string {
+  const color = c.stormRelated ? CLOSURE_STORM_FILL : CLOSURE_FILL;
+  const reason = c.stormRelated ? `<span style="color:${color};font-weight:600">${esc(c.reason)}</span>` : esc(c.reason);
+  return label(color, "diamond", closureHeadline(c), `${reason} · ${esc(closureExtent(c))}`, "Details");
 }

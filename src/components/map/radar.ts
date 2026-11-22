@@ -10,7 +10,6 @@ import type { Map as MlMap, RasterTileSource } from "maplibre-gl";
 const IEM = "https://mesonet.agron.iastate.edu/cache/tile.py/1.0.0/nexrad-n0q-900913";
 const META = "https://mesonet.agron.iastate.edu/data/gis/images/4326/USCOMP/n0q_0.json";
 export const RADAR_FRAMES = [50, 40, 30, 20, 10, 0]; // minutes before the latest scan
-const OPACITY = 0.65;
 const FIVE_MIN = 5 * 60_000;
 
 const layerId = (i: number) => `radar-${i}`;
@@ -53,7 +52,8 @@ export interface RadarState {
  * Shows/hides the radar, swaps frames by opacity (all frames stay loaded so the
  * loop doesn't flicker), and refreshes tiles + scan time every 5 minutes.
  */
-export function useRadar(map: RefObject<MlMap | null>, ready: boolean, enabled: boolean): RadarState {
+/** `opacity`: lighter on phones so markers stay readable over heavy rain. */
+export function useRadar(map: RefObject<MlMap | null>, ready: boolean, enabled: boolean, opacity = 0.65): RadarState {
   const last = RADAR_FRAMES.length - 1;
   const [frame, setFrame] = useState(last);
   const [playing, setPlaying] = useState(false);
@@ -69,8 +69,8 @@ export function useRadar(map: RefObject<MlMap | null>, ready: boolean, enabled: 
   useEffect(() => {
     const m = map.current;
     if (!ready || !m || !enabled) return;
-    RADAR_FRAMES.forEach((_, i) => m.setPaintProperty(layerId(i), "raster-opacity", i === frame ? OPACITY : 0));
-  }, [map, ready, enabled, frame]);
+    RADAR_FRAMES.forEach((_, i) => m.setPaintProperty(layerId(i), "raster-opacity", i === frame ? opacity : 0));
+  }, [map, ready, enabled, frame, opacity]);
 
   // Loop: step through frames, pausing on the latest one.
   useEffect(() => {

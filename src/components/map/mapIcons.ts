@@ -9,6 +9,9 @@ const RATIO = 2; // draw at 2x for sharp edges on phones
 export const CAMERA_FILL = "#334155";
 export const CAMERA_VIDEO_RING = "#38bdf8";
 export const OUTAGE_FILL = "#6366f1";
+/** Road closures: construction orange for roadwork, water blue when flooding or storms closed the road. */
+export const CLOSURE_FILL = "#c2410c";
+export const CLOSURE_STORM_FILL = "#0369a1";
 
 function canvas(w: number, h: number) {
   const c = document.createElement("canvas");
@@ -73,6 +76,42 @@ function outageIcon(size: number) {
   return c;
 }
 
+/** Diamond (road-sign shape) with a white bar for a closure, or a white wave when it's storm-related. */
+function closureIcon(size: number, fill: string, glyph: "bar" | "wave") {
+  const { c, ctx } = canvas(size, size);
+  const h = size / 2;
+  ctx.beginPath();
+  ctx.moveTo(h, 1.5);
+  ctx.lineTo(size - 1.5, h);
+  ctx.lineTo(h, size - 1.5);
+  ctx.lineTo(1.5, h);
+  ctx.closePath();
+  ctx.lineJoin = "round";
+  ctx.fillStyle = fill;
+  ctx.fill();
+  ctx.lineWidth = 1.75;
+  ctx.strokeStyle = "#ffffff";
+  ctx.stroke();
+  ctx.fillStyle = "#ffffff";
+  ctx.strokeStyle = "#ffffff";
+  if (glyph === "bar") {
+    roundRect(ctx, size * 0.27, h - size * 0.07, size * 0.46, size * 0.14, 1.5);
+    ctx.fill();
+  } else {
+    ctx.lineWidth = size * 0.09;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    const y = h + size * 0.02;
+    const w = size * 0.46;
+    const x0 = h - w / 2;
+    ctx.moveTo(x0, y);
+    ctx.bezierCurveTo(x0 + w * 0.2, y - size * 0.14, x0 + w * 0.3, y - size * 0.14, x0 + w * 0.5, y);
+    ctx.bezierCurveTo(x0 + w * 0.7, y + size * 0.14, x0 + w * 0.8, y + size * 0.14, x0 + w, y);
+    ctx.stroke();
+  }
+  return c;
+}
+
 function add(m: MlMap, name: string, c: HTMLCanvasElement) {
   if (m.hasImage(name)) return;
   const data = c.getContext("2d")!.getImageData(0, 0, c.width, c.height);
@@ -84,4 +123,6 @@ export function addMapIcons(m: MlMap) {
   add(m, "camera-video", cameraIcon(20, CAMERA_VIDEO_RING));
   add(m, "camera-cluster", cameraIcon(28, "#ffffff"));
   add(m, "outage", outageIcon(24));
+  add(m, "closure", closureIcon(26, CLOSURE_FILL, "bar"));
+  add(m, "closure-storm", closureIcon(26, CLOSURE_STORM_FILL, "wave"));
 }

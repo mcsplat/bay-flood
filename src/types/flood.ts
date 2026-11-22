@@ -175,9 +175,43 @@ export interface TrafficCamera {
   streamUrl: string | null;
 }
 
+/** A Caltrans highway closure that is in effect now. */
+export interface RoadClosure {
+  id: string;
+  route: string;
+  /** "North", "East / West", … */
+  direction: string;
+  from: string;
+  to: string;
+  nearby: string;
+  county: string;
+  /** Full closure (all lanes) vs. lanes, one-way traffic, alternating or moving. */
+  full: boolean;
+  /** Caltrans wording: "Full", "Lane", "One-Way Traffic", … */
+  closureType: string;
+  lanesClosed: string;
+  totalLanes: string;
+  /** Caltrans "type of work", e.g. "Flooding", "Bridge Repair" */
+  reason: string;
+  /** Caused by flooding, washouts, slides or storm damage */
+  stormRelated: boolean;
+  /** "Mainline", "Off Ramp", "Toll Bridge", … */
+  facility: string;
+  started: string | null;
+  ends: string | null;
+  endIndefinite: boolean;
+  delayMinutes: number | null;
+  lat: number;
+  lon: number;
+  /** End of the closed stretch, when it differs from the start */
+  endLat: number | null;
+  endLon: number | null;
+}
+
 export type Selection =
   | { type: "alert"; id: string }
   | { type: "gauge"; id: string }
   | { type: "tide"; id: string }
   | { type: "outage"; id: string }
-  | { type: "camera"; id: string };
+  | { type: "camera"; id: string }
+  | { type: "closure"; id: string };

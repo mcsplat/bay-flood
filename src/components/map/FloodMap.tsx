@@ -2,18 +2,20 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { GeoJSONSource, Map as MlMap } from "maplibre-gl";
-import type { FloodAlert, GaugeSummary, OutageReport, PowerOutage,
+import type { FloodAlert, GaugeSummary, OutageReport, PowerOutage, RoadClosure,
   Selection, TideStationReport, TrafficCamera } from "@/types/flood";
 import { rank } from "@/lib/categories";
 import { wireInteractions } from "./interactions";
 import { mapTargets } from "./mapTargets";
 import { addMapIcons } from "./mapIcons";
-import { useMapPadding, useRiskPulse, useTideMarkers } from "./mapEffects";
+import { useMapPadding, useRiskPulse } from "./mapEffects";
+import { useTideMarkers } from "./tideMarkers";
+import { useIsMobile } from "@/hooks/useIsMobile";
 import { addRadarLayers, useRadar } from "./radar";
 import { RadarControl } from "./RadarControl";
 import { LocateButton, useLocate } from "./LocateButton";
-import { BASEMAP, BAY_CENTER, LAYER_IDS, OVERLAY_LAYERS, alertsGeoJson,
-  camerasGeoJson, gaugesGeoJson, outagesGeoJson, type LayerKey } from "./layers";
+import { BASEMAP, BAY_CENTER, LAYER_IDS, OVERLAY_LAYERS, alertsGeoJson, camerasGeoJson,
+  closureLinesGeoJson, closuresGeoJson, gaugesGeoJson, outagesGeoJson, type LayerKey } from "./layers";
 
 interface Props {
   alerts: FloodAlert[];
@@ -21,6 +23,7 @@ interface Props {
   tides: TideStationReport[];
   outages: OutageReport | null;
   cameras: TrafficCamera[];
+  closures: RoadClosure[];
   layers: Record<LayerKey, boolean>;
   selection: Selection | null;
   focus: [number, number] | null;
@@ -31,7 +34,7 @@ interface Props {
 
 const EMPTY = { type: "FeatureCollection", features: [] } as GeoJSON.FeatureCollection;
 
-export function FloodMap({ alerts, gauges, tides, outages, cameras, layers, selection, focus, onSelect, bottomInset = 0 }: Props) {
+export function FloodMap({ alerts, gauges, tides, outages, cameras, closures, layers, selection, focus, onSelect, bottomInset = 0 }: Props) {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MlMap | null>(null);
   const mlRef = useRef<typeof import("maplibre-gl") | null>(null);
@@ -40,6 +43,7 @@ export function FloodMap({ alerts, gauges, tides, outages, cameras, layers, sele
   const outageIndex = useRef(new Map<string, PowerOutage>());
   const cameraIndex = useRef(new Map<string, TrafficCamera>());
   const alertIndex = useRef(new Map<string, FloodAlert>());
+  const closureIndex = useRef(new Map<string, RoadClosure>());
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -65,7 +69,7 @@ export function FloodMap({ alerts, gauges, tides, outages, cameras, layers, sele
       m.addControl(new ml.NavigationControl({ showCompass: false }), "top-right");
 
       m.on("load", () => {
-        for (const src of ["alerts", "outage-areas", "outages", "gauges"]) {
+        for (const src of ["alerts", "outage-areas", "outages", "closures", "closure-lines", "gauges"]) {
           m.addSource(src, { type: "geojson", data: EMPTY });
         }
         // ~800 cameras: cluster until street-level zoom.
@@ -79,7 +83,7 @@ export function FloodMap({ alerts, gauges, tides, outages, cameras, layers, sele
         const popup = new ml.Popup({ closeButton: false, offset: 14, maxWidth: "280px" });
         // Always above the marker; interactions.ts slides the card back on screen near the edges.
         const tapPopup = new ml.Popup({ closeButton: false, closeOnClick: false, anchor: "bottom", offset: 14, maxWidth: "min(300px, calc(100vw - 24px))", className: "tap-popup" });
-        const indexes = { gauges: gaugeIndex, outages: outageIndex, cameras: cameraIndex, alerts: alertIndex };
+        const indexes = { gauges: gaugeIndex, outages: outageIndex, cameras: cameraIndex, alerts: alertIndex, closures: closureIndex };
         wireInteractions(m, popup, tapPopup, mapTargets(m, indexes), (s) => selectRef.current(s));
         setReady(true);
       });
@@ -115,13 +119,25 @@ export function FloodMap({ alerts, gauges, tides, outages, cameras, layers, sele
   }, [ready, gauges]);
 
   useEffect(() => {
+    closureIndex.current = new Map(closures.map((c) => [c.id, c]));
+    if (!ready) return;
+    setData("closures", closuresGeoJson(closures));
+    setData("closure-lines", closureLinesGeoJson(closures));
+  }, [ready, closures]);
+
+  useEffect(() => {
     cameraIndex.current = new Map(cameras.map((c) => [c.id, c]));
     if (ready) setData("cameras", camerasGeoJson(cameras));
   }, [ready, cameras]);
 
   useRiskPulse(map, ready && layers.gauges && gauges.some((g) => rank(g.category) >= 1));
-  useTideMarkers(map, mlRef, ready, tides, layers.tides, selectRef);
-  const radar = useRadar(map, ready, layers.radar);
+  const phone = useIsMobile();
+  useTideMarkers(map, mlRef, ready, tides, layers.tides, phone, selectRef);
+  // Phones: lighter radar and alert shading so markers stay readable on a small screen.
+  const radar = useRadar(map, ready, layers.radar, phone ? 0.45 : 0.65);
+  useEffect(() => {
+    if (ready) map.current?.setPaintProperty("alerts-fill", "fill-opacity", phone ? 0.08 : 0.16);
+  }, [ready, phone]);
   const located = useLocate(map, mlRef, ready);
   useMapPadding(map, ready, bottomInset);
 

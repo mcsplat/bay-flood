@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import type { FloodCategory } from "@/types/flood";
 import { ALERT_COLOR, CATEGORY_COLOR } from "@/lib/categories";
-import { CAMERA_FILL, CAMERA_VIDEO_RING, OUTAGE_FILL } from "./mapIcons";
+import { CAMERA_FILL, CAMERA_VIDEO_RING, CLOSURE_FILL, CLOSURE_STORM_FILL, OUTAGE_FILL } from "./mapIcons";
 import type { LayerKey } from "./layers";
 
 /** Same gradient as the radar control and the NEXRAD reflectivity scale. */
@@ -12,6 +12,7 @@ export const LAYER_INFO: { key: LayerKey; label: string; description: string }[]
   { key: "alerts", label: "NWS alerts", description: "Flood warnings, watches and advisories" },
   { key: "gauges", label: "Creek gauges", description: "Creek and river water levels" },
   { key: "tides", label: "Bay tides", description: "Water level and storm surge" },
+  { key: "closures", label: "Road closures", description: "Caltrans highway and bridge closures in effect" },
   { key: "outages", label: "Power outages", description: "PG&E and other utilities, via Cal OES" },
   { key: "cameras", label: "Traffic cams", description: "Caltrans road cameras" },
   { key: "radar", label: "Radar", description: "Rain over the last 50 minutes" },
@@ -41,6 +42,13 @@ export function LayerGlyph({ layer, size = 20 }: { layer: LayerKey; size?: numbe
           <path d="M10 10.5c1-1.4 2-1.4 3 0s2 1.4 3 0" stroke="#fff" strokeWidth="1.3" fill="none" strokeLinecap="round" />
         </svg>
       );
+    case "closures":
+      return (
+        <svg {...common}>
+          <path d="M10 1.5 18.5 10 10 18.5 1.5 10Z" fill={CLOSURE_STORM_FILL} stroke="#fff" strokeWidth="1.3" strokeLinejoin="round" />
+          <path d="M6.3 10.4c1.2-1.6 2.5-1.6 3.7 0s2.5 1.6 3.7 0" stroke="#fff" strokeWidth="1.6" fill="none" strokeLinecap="round" />
+        </svg>
+      );
     case "outages":
       return (
         <svg {...common}>
@@ -64,12 +72,18 @@ export function LayerGlyph({ layer, size = 20 }: { layer: LayerKey; size?: numbe
   }
 }
 
-function Chip({ color, shape = "dot", children }: { color: string; shape?: "dot" | "area"; children: ReactNode }) {
+function Chip({ color, shape = "dot", children }: { color: string; shape?: "dot" | "area" | "diamond"; children: ReactNode }) {
   return (
     <li className="flex items-center gap-1.5">
       <span
-        className={shape === "dot" ? "h-2.5 w-2.5 flex-none rounded-full" : "h-2.5 w-3.5 flex-none rounded-[3px] border-[1.5px]"}
-        style={shape === "dot" ? { background: color } : { borderColor: color, background: `${color}33` }}
+        className={
+          shape === "dot"
+            ? "h-2.5 w-2.5 flex-none rounded-full"
+            : shape === "diamond"
+              ? "mx-0.5 h-2 w-2 flex-none rotate-45 rounded-[2px]"
+              : "h-2.5 w-3.5 flex-none rounded-[3px] border-[1.5px]"
+        }
+        style={shape === "area" ? { borderColor: color, background: `${color}33` } : { background: color }}
         aria-hidden
       />
       {children}
@@ -111,6 +125,16 @@ export function LayerKeyDetail({ layer }: { layer: LayerKey }) {
       );
     case "tides":
       return note("Each label shows the water level now and the surge above or below the forecast tide. The dot is the high-tide outlook, in the gauge colors.");
+    case "closures":
+      return (
+        <div className="space-y-1.5">
+          <ul className="flex flex-wrap gap-x-3 gap-y-1 text-[11px]">
+            <Chip color={CLOSURE_STORM_FILL} shape="diamond">Flooding or storm</Chip>
+            <Chip color={CLOSURE_FILL} shape="diamond">Roadwork or other</Chip>
+          </ul>
+          {note("Bigger diamond and solid line: road fully closed. Smaller and dashed: some lanes closed. State highways only, not city streets.")}
+        </div>
+      );
     case "outages":
       return note("A bigger bolt means more customers are out. Shaded areas show where power is off.");
     case "cameras":

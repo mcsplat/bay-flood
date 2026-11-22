@@ -6,7 +6,7 @@ import type { LayerKey } from "@/components/map/layers";
 type Layers = Record<LayerKey, boolean>;
 
 const KEY = "bfw-layers";
-const ALL_ON: Layers = { alerts: true, gauges: true, tides: true, outages: true, cameras: true, radar: true };
+const ALL_ON: Layers = { alerts: true, gauges: true, tides: true, closures: true, outages: true, cameras: true, radar: true };
 /** Phones start focused on water: cameras and outages are a tap away in the Layers menu. */
 const PHONE_DEFAULT: Layers = { ...ALL_ON, cameras: false, outages: false };
 

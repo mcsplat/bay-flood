@@ -1,5 +1,6 @@
 import type { FeatureCollection } from "geojson";
-import type { FloodAlert, GaugeSummary, PowerOutage, TrafficCamera } from "@/types/flood";
+import type { FloodAlert, GaugeSummary, PowerOutage, RoadClosure, TrafficCamera } from "@/types/flood";
+import { CLOSURE_FILL, CLOSURE_STORM_FILL } from "./mapIcons";
 import { ALERT_COLOR, ALERT_RANK, CATEGORY_COLOR, rank } from "@/lib/categories";
 
 export const BAY_CENTER: [number, number] = [-122.25, 37.75];
@@ -9,7 +10,7 @@ export const BASEMAP = {
   dark: "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json",
 };
 
-export type LayerKey = "alerts" | "gauges" | "tides" | "outages" | "cameras" | "radar";
+export type LayerKey = "alerts" | "gauges" | "tides" | "closures" | "outages" | "cameras" | "radar";
 
 export const CAMERA_COLOR = "#334155";
 /** Cameras appear at neighborhood zoom; the regional view is about water. */
@@ -23,6 +24,32 @@ export function camerasGeoJson(cameras: TrafficCamera[]): FeatureCollection {
       geometry: { type: "Point", coordinates: [c.lon, c.lat] },
       properties: { id: c.id, video: c.streamUrl ? 1 : 0 },
     })),
+  };
+}
+
+/** Closure markers at the start of each closed stretch. */
+export function closuresGeoJson(closures: RoadClosure[]): FeatureCollection {
+  return {
+    type: "FeatureCollection",
+    features: closures.map((c) => ({
+      type: "Feature",
+      geometry: { type: "Point", coordinates: [c.lon, c.lat] },
+      properties: { id: c.id, full: c.full ? 1 : 0, storm: c.stormRelated ? 1 : 0 },
+    })),
+  };
+}
+
+/** The closed stretch itself, when Caltrans gives both ends. */
+export function closureLinesGeoJson(closures: RoadClosure[]): FeatureCollection {
+  return {
+    type: "FeatureCollection",
+    features: closures
+      .filter((c) => c.endLat != null && c.endLon != null)
+      .map((c) => ({
+        type: "Feature",
+        geometry: { type: "LineString", coordinates: [[c.lon, c.lat], [c.endLon!, c.endLat!]] },
+        properties: { id: c.id, full: c.full ? 1 : 0, storm: c.stormRelated ? 1 : 0 },
+      })),
   };
 }
 
@@ -147,6 +174,45 @@ export const OVERLAY_LAYERS = [
       "symbol-sort-key": ["get", "customers"],
     },
   },
+  // Road closures: diamonds (road-sign shape). Blue = flooding/storm, orange = roadwork.
+  // Full closures are larger with a solid line; lane closures smaller and dashed.
+  {
+    id: "closures-line",
+    type: "line",
+    source: "closure-lines",
+    minzoom: 9,
+    filter: ["==", ["get", "full"], 1],
+    layout: { "line-cap": "round" },
+    paint: {
+      "line-color": ["case", ["==", ["get", "storm"], 1], CLOSURE_STORM_FILL, CLOSURE_FILL],
+      "line-width": ["interpolate", ["linear"], ["zoom"], 9, 3, 14, 6],
+      "line-opacity": 0.85,
+    },
+  },
+  {
+    id: "closures-line-partial",
+    type: "line",
+    source: "closure-lines",
+    minzoom: 9,
+    filter: ["==", ["get", "full"], 0],
+    paint: {
+      "line-color": ["case", ["==", ["get", "storm"], 1], CLOSURE_STORM_FILL, CLOSURE_FILL],
+      "line-width": ["interpolate", ["linear"], ["zoom"], 9, 2, 14, 4],
+      "line-dasharray": [1.5, 1.2],
+      "line-opacity": 0.8,
+    },
+  },
+  {
+    id: "closures-point",
+    type: "symbol",
+    source: "closures",
+    layout: {
+      "icon-image": ["case", ["==", ["get", "storm"], 1], "closure-storm", "closure"],
+      "icon-size": ["case", ["==", ["get", "full"], 1], 0.95, 0.72],
+      "icon-allow-overlap": true,
+      "symbol-sort-key": ["+", ["*", ["get", "storm"], 2], ["get", "full"]],
+    },
+  },
   // At-risk gauges (action stage or worse) get a pulsing halo plus a steady ring,
   // so they read as "pay attention" even when zoomed out among hundreds of dots.
   {
@@ -214,6 +280,7 @@ export const LAYER_IDS: Record<LayerKey, string[]> = {
   alerts: ["alerts-fill", "alerts-line"],
   gauges: ["gauges-risk-pulse", "gauges-risk-ring", "gauges-circle", "gauges-selected"],
   tides: [],
+  closures: ["closures-line", "closures-line-partial", "closures-point"],
   outages: ["outage-areas-fill", "outage-areas-line", "outages-point"],
   cameras: ["cameras-cluster", "cameras-point"],
   radar: [], // managed by useRadar (frames swap by opacity)

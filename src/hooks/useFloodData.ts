@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import type { FloodAlert, GaugeSummary, Outlook, OutageReport, TideStationReport, TrafficCamera } from "@/types/flood";
+import type { FloodAlert, GaugeSummary, Outlook, OutageReport, RoadClosure, TideStationReport, TrafficCamera } from "@/types/flood";
 import { usePolling } from "./usePolling";
 
 const MINUTE = 60_000;
@@ -13,23 +13,27 @@ export function useFloodData() {
   const gaugesQ = usePolling<{ gauges: GaugeSummary[] }>("/api/gauges", 5 * MINUTE);
   const outagesQ = usePolling<OutageReport>("/api/outages", 5 * MINUTE);
   const outlookQ = usePolling<Outlook>("/api/outlook", 10 * MINUTE);
+  const closuresQ = usePolling<{ closures: RoadClosure[] }>("/api/closures", 5 * MINUTE);
   const camerasQ = usePolling<{ cameras: TrafficCamera[] }>("/api/cameras", 60 * MINUTE);
 
   const alerts = useMemo(() => alertsQ.data?.alerts ?? [], [alertsQ.data]);
   const tides = useMemo(() => tidesQ.data?.stations ?? [], [tidesQ.data]);
   const gauges = useMemo(() => gaugesQ.data?.gauges ?? [], [gaugesQ.data]);
   const cameras = useMemo(() => camerasQ.data?.cameras ?? [], [camerasQ.data]);
+  const closures = useMemo(() => closuresQ.data?.closures ?? [], [closuresQ.data]);
 
   return {
     alerts,
     tides,
     gauges,
     cameras,
+    closures,
+    closuresLoaded: closuresQ.data != null,
     outages: outagesQ.data,
     outlook: outlookQ.data,
     outlookError: outlookQ.error,
     loading: !alertsQ.data && !tidesQ.data && !gaugesQ.data,
-    errors: [alertsQ.error, tidesQ.error, gaugesQ.error, outagesQ.error, camerasQ.error].filter(Boolean) as string[],
+    errors: [alertsQ.error, tidesQ.error, gaugesQ.error, outagesQ.error, closuresQ.error, camerasQ.error].filter(Boolean) as string[],
     offline: [alertsQ, tidesQ, gaugesQ, outagesQ, outlookQ].some((q) => q.offline),
     updatedAt: Math.max(alertsQ.updatedAt ?? 0, tidesQ.updatedAt ?? 0, gaugesQ.updatedAt ?? 0),
   };

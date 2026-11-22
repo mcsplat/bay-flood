@@ -1,17 +1,19 @@
 import type { GeoJSONSource, Map as MlMap } from "maplibre-gl";
 import type { RefObject } from "react";
-import type { FloodAlert, GaugeSummary, PowerOutage, TrafficCamera } from "@/types/flood";
+import type { FloodAlert, GaugeSummary, PowerOutage, RoadClosure, TrafficCamera } from "@/types/flood";
 import type { HoverTarget } from "./interactions";
 import { gaugePopupHtml } from "./gaugePopup";
 import { outagePopupHtml } from "./outagePopup";
 import { cameraPopupHtml, clusterPopupHtml } from "./cameraPopup";
-import { alertLabel, cameraLabel, gaugeLabel, outageLabel } from "./tapLabels";
+import { closurePopupHtml } from "./closurePopup";
+import { alertLabel, cameraLabel, closureLabel, gaugeLabel, outageLabel } from "./tapLabels";
 
 export interface MapIndexes {
   gauges: RefObject<Map<string, GaugeSummary>>;
   outages: RefObject<Map<string, PowerOutage>>;
   cameras: RefObject<Map<string, TrafficCamera>>;
   alerts: RefObject<Map<string, FloodAlert>>;
+  closures: RefObject<Map<string, RoadClosure>>;
 }
 
 type Located = { lat: number; lon: number };
@@ -24,7 +26,7 @@ function at<T extends Located>(index: RefObject<Map<string, T>>, html: (item: T)
   };
 }
 
-/** Interactive layers in priority order: gauges win over outages, cameras, then alert areas. */
+/** Interactive layers in priority order: gauges, then closures, outages, cameras, alert areas. */
 export function mapTargets(m: MlMap, idx: MapIndexes): HoverTarget[] {
   return [
     {
@@ -32,6 +34,12 @@ export function mapTargets(m: MlMap, idx: MapIndexes): HoverTarget[] {
       describe: at(idx.gauges, gaugePopupHtml),
       label: at(idx.gauges, gaugeLabel),
       select: (id) => ({ type: "gauge", id }),
+    },
+    {
+      layers: ["closures-point", "closures-line", "closures-line-partial"],
+      describe: at(idx.closures, closurePopupHtml),
+      label: at(idx.closures, closureLabel),
+      select: (id) => ({ type: "closure", id }),
     },
     {
       layers: ["outages-point", "outage-areas-fill"],

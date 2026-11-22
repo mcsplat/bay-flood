@@ -7,6 +7,7 @@ import { OutlookCard } from "@/components/outlook/OutlookCard";
 import { InstallHint } from "@/components/pwa/InstallHint";
 import { CameraDetail } from "@/components/camera/CameraPanel";
 import { OutageDetail, OutageSummary } from "@/components/panel/OutagePanel";
+import { ClosureDetail, ClosureSummary } from "@/components/panel/ClosurePanel";
 import { SummaryCard } from "@/components/panel/SummaryCard";
 import { AlertDetail, AlertList } from "@/components/panel/AlertList";
 import { TideDetail, TideList } from "@/components/panel/TidePanel";
@@ -23,7 +24,7 @@ interface Props {
 
 /** Everything in the side panel (desktop) or bottom sheet (phones): banners, overview or a detail view, footer. */
 export function PanelBody({ data, selection, onSelect, onBack, onFocus }: Props) {
-  const { alerts, tides, gauges, cameras, outages } = data;
+  const { alerts, tides, gauges, cameras, outages, closures } = data;
   const find = <T,>(type: Selection["type"], list: T[] | undefined, key: (x: T) => string) =>
     selection?.type === type ? list?.find((x) => key(x) === selection.id) : undefined;
 
@@ -32,6 +33,7 @@ export function PanelBody({ data, selection, onSelect, onBack, onFocus }: Props)
   const gauge = find("gauge", gauges, (g) => g.lid);
   const outage = find("outage", outages?.outages, (o) => o.id);
   const camera = find("camera", cameras, (c) => c.id);
+  const closure = find("closure", closures, (c) => c.id);
 
   return (
     <div className="space-y-3 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
@@ -63,6 +65,8 @@ export function PanelBody({ data, selection, onSelect, onBack, onFocus }: Props)
         <OutageDetail outage={outage} onBack={onBack} />
       ) : camera ? (
         <CameraDetail camera={camera} onBack={onBack} />
+      ) : closure ? (
+        <ClosureDetail closure={closure} onBack={onBack} />
       ) : (
         <>
           <SummaryCard alerts={alerts} gauges={gauges} tides={tides} />
@@ -70,6 +74,7 @@ export function PanelBody({ data, selection, onSelect, onBack, onFocus }: Props)
           <AlertList alerts={alerts} onSelect={onSelect} />
           <TideList tides={tides} onSelect={onSelect} />
           <GaugeList gauges={gauges} onSelect={onSelect} />
+          {data.closuresLoaded && <ClosureSummary closures={closures} onSelect={onSelect} />}
           {outages && <OutageSummary report={outages} onSelect={onSelect} />}
         </>
       )}
